@@ -19,7 +19,11 @@ class Huff_tree{
     
   typedef typename std::map< DataType,  Frequency>	Huff_map;
   typedef typename std::map< DataType,  Frequency>::iterator Huff_iterator;
-
+  
+  
+  
+//======================================================
+//======================================================
  class Node {
     public:
     Frequency frequency;
@@ -67,7 +71,7 @@ class Huff_tree{
     
   
   
-  
+  //==========================================
   void fill(std::vector<bool> prefix, std::map<DataType, std::vector<bool> >& code){
        
       
@@ -87,7 +91,7 @@ class Huff_tree{
          
   }
   
-  
+  //============================================
   void print(){
     
        if (exist_child){
@@ -97,24 +101,35 @@ class Huff_tree{
        }
        else{
          std::vector<bool>::iterator it;
-         std::cout << data << "\t";
+	 std::vector<int>::iterator it2;
+         for ( it2=quaternary_data.begin() ; it2 != quaternary_data.end(); it2++ ){
+	    std::cout << *it2; 
+         } 
+	std::cout << "\t";
 	 
          for ( it=encoded.begin() ; it != encoded.end(); it++ ){
 	    std::cout << *it; 
          } 
-	 std::cout <<"\n";  
+         std::cout << "\t"<< frequency << "\n";
+	// std::cout <<"\n";  
     
        }   
     }
     
- }; // end of class Node
-
+ 
+   
+}; // end of class Node
+//======================================================
+//=======================================================
     
-  Node* root;
+ 
+ 
+ 
+ Node* root;
   std::vector<Node*> body;
      
  
-  
+  //=====================================================================
   void make_leafs(Huff_tree::Huff_map &letter_probability, int blocks) {
        int length = 0;
     //Huff_tree::Huff_map &leafs = * new Huff_tree::Huff_map();
@@ -125,9 +140,10 @@ class Huff_tree{
       length = 0;
       int copy_i = i;
       freq = 1;
-      while (length < blocks+1){
+      while (length < blocks){
 	if (copy_i > 0){
 	    freq *= letter_probability[(copy_i % 4)];
+	    
 	    copy_i /= 4;
          }	
 	else{
@@ -143,7 +159,7 @@ class Huff_tree{
    
 }  
 
-
+//=======================================================================
 Node* construct_tree(){
     priority_queue<Node*, vector<Node*>, Node> pqueue;
         
@@ -172,61 +188,9 @@ Node* construct_tree(){
    int size = pqueue.size();
        return root; 
 }
- 
- #if 0
-  void map_convertion (std::map<DataType, std::vector<bool> >& code, std::map<std::string, std::string>& code_in_string, int blocks) {
-       std::vector<bool>::iterator it;
-       int max = (int)pow(4.0, (double)blocks);
-       std::string pref;
-       
-       for (int i = 0; i < max; i++) {
-	 pref="";
-	 for ( it=code[i].begin() ; it != code[i].end(); it++ ){
-	   if (*it) {
-	   pref.append("1");
-	   }
-	   else {
-	    pref.append("0");
-	   }
-      	 }
-	code_in_string[quaternary_convertion(i, blocks)] = pref; 
-	}
-	 
-  }
-
+//=========================================================================== 
   
-  Huff_tree::Huff_map& combine_in_blocks(Huff_tree::Huff_map &letter_probability, int blocks){
-            
-    int length = 0;
-    Huff_tree::Huff_map &leafs = * new Huff_tree::Huff_map();
-    int max = (int)pow(4.0, (double)blocks);
-    
-    for (int i =0 ; i < max; i++){
-      length = 0;
-      int copy_i = i;
-      leafs[i] = 1;
-      while (length < blocks+1){
-	if (copy_i > 0){
-	    leafs[i] *= letter_probability[(copy_i % 4)];
-	    copy_i /= 4;
-         }	
-	else{
-	 leafs[i] *= letter_probability[0];
-   
-	}
-	length++;
-     }
-   }   
-     
-   return leafs;
-    
- }
-
-#endif 
   
-  void string_encoding(std::string initial, std::map<DataType, std::vector<bool> >& code) {
-   
-  }
   
   void calculate_expectation (){
     typename std::vector<Node*>::iterator iter;
@@ -236,18 +200,19 @@ Node* construct_tree(){
     expectation += (*iter)->frequency*(*iter)->encoded.size();
      }
   }
+   std::cout << "=========================================" << "\n";
     cout << "Expectation is" << "\t" << expectation << "\n";
-   
+    std::cout << "=========================================" << "\n";
   }
   
- 
+//========================================================================== 
  
  std::vector<int> quaternary_convertion(int i, int blocks) {
   
     std::vector<int> quaternary;
     
       int copy_i = i;
-      while (quaternary.size() < blocks+1){
+      while (quaternary.size() < blocks){
 	if (copy_i > 0){
 	  int r = copy_i % 4;
 	  quaternary.push_back(r);
@@ -261,42 +226,90 @@ Node* construct_tree(){
        return quaternary;
   }
 
-  
-};
+//=========================================================================
 
-
-  void print2(std::map<std::string, std::string>& code_in_string) {
-    std::map<std::string, std::string>::iterator it;
-      for ( it=code_in_string.begin() ; it != code_in_string.end(); it++ ){
-    cout << (*it).first << "\t" << (*it).second << "\n";
-       }
-    
+  void bite_cost () {
+    double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
+    double weight [4];
+    for (int i = 0; i<20; i++) {
+      double weight [4] = {0.0, 0.0, 0.0, 0.0};
+      typename std::vector<Node*>::iterator iter;
+      for ( iter=body.begin() ; iter != body.end(); iter++ ){
+	if (!(*iter)->exist_child){
+	  double block_weight = 0;
+	  std::vector<int>::iterator it2;
+	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
+	      block_weight +=  weight_old[(*it2)];
+	  }
+	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
+	      weight[(*it2)] +=  (*iter)->frequency*(weight_old[(*it2)]/block_weight)*(*iter)->encoded.size();
+	  }
+        }
+      }
+      std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
+      weight_old[0]= weight [0];
+      weight_old[1]= weight [1];
+      weight_old[2]= weight [2];
+      weight_old[3]= weight [3];
+      weight_old= weight; 
+      
+    }
+     std::cout << "=========================================" << "\n";
   }
+  
+  void bite_cost_2 (int blocks) {
+    double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
+    double weight [4];
+    for (int i = 0; i<20; i++) {
+      double weight [4] = {0.0, 0.0, 0.0, 0.0};
+      typename std::vector<Node*>::iterator iter;
+      for ( iter=body.begin() ; iter != body.end(); iter++ ){
+	if (!(*iter)->exist_child){
+	  double block_weight = 0;
+	  std::vector<int>::iterator it2;
+	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
+	      block_weight +=  weight_old[(*it2)];
+	  }
+	  weight[(*iter)->quaternary_data[0]]+= (*iter)->frequency*(weight_old[(*iter)->quaternary_data[0]]/block_weight)*(*iter)->encoded.size()*blocks;
+	  //for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
+	   //   weight[(*it2)] +=  (*iter)->frequency*(weight_old[(*it2)]/block_weight)*(*iter)->encoded.size();
+	 // }
+        }
+      }
+      std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
+      weight_old[0]= weight [0];
+      weight_old[1]= weight [1];
+      weight_old[2]= weight [2];
+      weight_old[3]= weight [3];
+    }
+  }
+  
+};// end of class Huff_tree;
+
+
+
+
   
 int main(int argc, char **argv) {
     std::cout << "Hello, world!" << std::endl;
     Huff_tree <int, double>* tree = new Huff_tree <int, double>;
     std::map<int, double> letter_probability;
    
-    letter_probability[0] = 0.1;
-    letter_probability[1] = 0.4;
-    letter_probability[2] = 0.24;
-    letter_probability[3] = 0.26;
+    letter_probability[0] = 0.4;
+    letter_probability[1] = 0.3;
+    letter_probability[2] = 0.2;
+    letter_probability[3] = 0.1;
    std::vector<bool> prefix;
    std::map<int, std::vector<bool> > code ;
-   std::map<std::string, std::string> code_in_string;
    
-  int blocks = 4;
+   
+  int blocks = 5;
   tree->make_leafs(letter_probability, blocks); 
   tree->construct_tree()->fill(prefix,code);
   tree->root->print();
   tree->calculate_expectation();
-   
-  //tree->construct_tree(tree->combine_in_blocks(letter_probability, blocks))->fill(prefix,code);
-  // tree->root->print(code);
-   //tree->map_convertion(code, code_in_string, blocks);
-  // tree->calculate_expectation(tree->combine_in_blocks(letter_probability, blocks),code);
-  //print2 (code_in_string);
+  tree->bite_cost(); 
+  tree->bite_cost_2(blocks);
   return 0;
     
 }
