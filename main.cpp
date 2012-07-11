@@ -9,6 +9,11 @@
 #include <map>
 #include <stdio.h>
 #include "math.h"
+
+
+#include <stdlib.h>
+#include <string.h>
+
 using namespace std;
 
 template <typename DataType, typename Frequency> 
@@ -92,16 +97,17 @@ class Huff_tree{
   }
   
   //============================================
-  void print(){
+  void print(std::map< std::vector<int>, std::vector<bool> > &code_1){
     
        if (exist_child){
-         left_child->print();
-         right_child->print();
+         left_child->print(code_1);
+         right_child->print(code_1);
 	 
        }
        else{
          std::vector<bool>::iterator it;
 	 std::vector<int>::iterator it2;
+	 code_1[quaternary_data] = encoded;
          for ( it2=quaternary_data.begin() ; it2 != quaternary_data.end(); it2++ ){
 	    std::cout << *it2; 
          } 
@@ -130,7 +136,7 @@ class Huff_tree{
      
  
   //=====================================================================
-  void make_leafs(Huff_tree::Huff_map &letter_probability, int blocks) {
+  void make_leafs(Huff_tree::Huff_map letter_probability, int blocks) {
        int length = 0;
     //Huff_tree::Huff_map &leafs = * new Huff_tree::Huff_map();
     int max = (int)pow(4.0, (double)blocks);
@@ -242,7 +248,7 @@ Node* construct_tree(){
 	      block_weight +=  weight_old[(*it2)];
 	  }
 	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
-	      weight[(*it2)] +=  (*iter)->frequency*(weight_old[(*it2)]/block_weight)*(*iter)->encoded.size();
+	    weight[(*it2)] += (!block_weight)? 1e-6: (*iter)->frequency*(weight_old[(*it2)]/block_weight)*(*iter)->encoded.size();
 	  }
         }
       }
@@ -251,12 +257,12 @@ Node* construct_tree(){
       weight_old[1]= weight [1];
       weight_old[2]= weight [2];
       weight_old[3]= weight [3];
-      weight_old= weight; 
-      
+           
     }
      std::cout << "=========================================" << "\n";
   }
   
+  //=============================================================================
   void bite_cost_2 (int blocks) {
     double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
     double weight [4];
@@ -284,32 +290,127 @@ Node* construct_tree(){
     }
   }
   
+  
+ //======================================================================== 
+  void string_encode (std::vector<int> string_snp, int blocks, std::map< std::vector<int>, std::vector<bool> > &code_1) {
+    std::vector<int>::iterator it;
+    std::vector<bool>::iterator it2;
+    std::vector<int> part;
+    int i = 1;
+     for ( it=string_snp.begin() ; it != string_snp.end(); it++ ){
+       part.push_back (*it);
+       if (i=blocks) {
+	 for ( it2=code_1[part].begin() ; it2 != code_1[part].end(); it2++ ){
+      	 cout << *it2;
+	 }
+	 i = 1;
+	 part.clear ();
+      }
+      i++;
+     	          
+    } 
+  }
+  
 };// end of class Huff_tree;
 
 
-
+class Genotypes{
+public:
+  char* buffer;
+  unsigned char start[3];
+  int Nid, Nsnps;
+  
+ Genotypes(char *filename, int Nid1, int Nsnps1) : Nid(Nid1), Nsnps(Nsnps1) {
+    char *file = filename;
+   FILE *in = fopen(file, "r");
+  if (!in)
+    cout << "Couln't open input file: %s" << "\t" << file <<"\n";
+  
+  if (fread(start, 1, 3, in)!=3)
+    cout << "Failed to read first 3 bytes" << "\n";
+  if (start[0]!='\x6C' || start[1]!='\x1B')
+    cout << "Input file does not appear to be a .bed file (%X, %X)" << "\n";
+    fseek (in, 0, SEEK_END);
+    long filesize = ftell (in);
+     buffer  = (char*)malloc(filesize);
+     fseek (in, 0, SEEK_SET);
+    fread (buffer, filesize, 1, in); //fread ( void * ptr, size_t size, size_t count, FILE * stream );
+  }
+ //========================================================== 
+  int genotype(int snp, int id) {
+    const unsigned char recode[4] = {'\x01', '\x00', '\x02', '\x03'};
+    int bites_by_snp = 3+((Nid+3)/4);
+    int start = bites_by_snp*snp +3;
+    int ind = id/4;
+    int gt = (buffer[start+ind] >> (2*(id%4))) & 3;
+    return recode[gt];
+  }
+  //==================================================
+  
+  void vector_for_snp (int snp1, std::vector<int> &row) {
+    
+    for (int i = 0; i < Nid; i++) {
+     row.push_back(genotype(snp1 ,i));
+    // cout<< genotype(snp1 ,i);
+      
+    }
+    
+  }
+  
+//===========================================================
+  
+   std::map<int, double> string_frequency (vector<int> &row) {
+   std::vector<int>::iterator it;
+   
+   std::map<int, double> symbol_probability;
+   // double	symbol_probability[4];
+    symbol_probability[0] = 0.0;
+    symbol_probability[1] = 0.0;
+    symbol_probability[2] = 0.0;
+    symbol_probability[3] = 0.0;
+    
+    double length = (double)row.size();
+    cout << "!!!!" << length << "\n";
+    for ( it=row.begin() ; it != row.end(); it++ ){
+      symbol_probability[*it] += 1/length;
+	          
+    } 
+    cout << "======"<< symbol_probability[0] << "\t" <<  symbol_probability[1] << "\t" <<  symbol_probability[2] << "\t" <<  symbol_probability[3] << "\n" ;
+   return symbol_probability;		 
+  //return *new std::map<int, double>;
+     
+  }
+  
+};// end of class Genotypes
 
   
 int main(int argc, char **argv) {
     std::cout << "Hello, world!" << std::endl;
-    Huff_tree <int, double>* tree = new Huff_tree <int, double>;
-    std::map<int, double> letter_probability;
+    
+   // std::map<int, double> letter_probability;
    
-    letter_probability[0] = 0.4;
-    letter_probability[1] = 0.3;
-    letter_probability[2] = 0.2;
-    letter_probability[3] = 0.1;
+  //  letter_probability[0] = 0.4;
+   // letter_probability[1] = 0.3;
+    //letter_probability[2] = 0.2;
+    //letter_probability[3] = 0.1;
    std::vector<bool> prefix;
-   std::map<int, std::vector<bool> > code ;
-   
-   
-  int blocks = 5;
-  tree->make_leafs(letter_probability, blocks); 
+   std::map<int, std::vector<bool> > code;
+   std::map< std::vector<int>, std::vector<bool> > code_1;
+   std::vector<int> row;
+  int blocks = 2;
+  
+  
+  
+  Genotypes* genotype = new Genotypes ("hapmap-ceu.bed", 60, 2239392);
+  genotype->vector_for_snp(390, row);
+  Huff_tree <int, double>* tree = new Huff_tree <int, double>;
+  tree->make_leafs((genotype->string_frequency(row)), blocks); 
   tree->construct_tree()->fill(prefix,code);
-  tree->root->print();
+  tree->root->print(code_1);
   tree->calculate_expectation();
   tree->bite_cost(); 
-  tree->bite_cost_2(blocks);
+ // tree->bite_cost_2(blocks);
+  tree->string_encode(row, blocks,code_1);
   return 0;
     
 }
