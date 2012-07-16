@@ -447,7 +447,11 @@ int main(int argc, char **argv) {
    std::map<int, std::vector<bool> > code;
    std::map< std::vector<int>, std::vector<bool> > code_1;
    std::vector<int> row;
-   
+   std::vector<double> individ_costs;
+   for(int i =0; i < 60; i++){
+  individ_costs.push_back(0.0);
+    
+  }
   int blocks;
   
   Genotypes* genotype = new Genotypes ("hapmap-ceu.bed", 60, 2239392);
@@ -490,6 +494,8 @@ int main(int argc, char **argv) {
       }
     }
     result << "\n";
+      
+    
       //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
     tree->calculate_expectation(blocks);
     
@@ -521,11 +527,22 @@ int main(int argc, char **argv) {
    
   }
   
+  
+  for(int i =0; i < 60; i++){
+  individ_costs[i]+=costs[row[i]];
+    
+  }
+ 
+ 
+  
    row.clear();
   }
   
-  
-  
+  ofstream result_ind("result_ind.txt"); 
+  for(int i =0; i < 60; i++){
+  result_ind << i<< "\t" << individ_costs[i] <<"\n";
+    
+  }
   
   return 0;
     
