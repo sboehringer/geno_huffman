@@ -16,15 +16,24 @@
 
 using namespace std;
 
+class Node;
+
 template <typename DataType, typename Frequency> 
 class Huff_tree{
-  
+    
     
   public:
     
   typedef typename std::map< DataType,  Frequency>	Huff_map;
   typedef typename std::map< DataType,  Frequency>::iterator Huff_iterator;
-  
+  Huff_tree(){
+    root;
+    body;
+  }
+  ~Huff_tree(){
+    delete root;
+    delete body;
+  }
   
   
 //======================================================
@@ -109,14 +118,14 @@ class Huff_tree{
 	 std::vector<int>::iterator it2;
 	 code_1[quaternary_data] = encoded;
          for ( it2=quaternary_data.begin() ; it2 != quaternary_data.end(); it2++ ){
-	    std::cout << *it2; 
+	//    std::cout << *it2; 
          } 
-	std::cout << "\t";
+	//std::cout << "\t";
 	 
-         for ( it=encoded.begin() ; it != encoded.end(); it++ ){
-	    std::cout << *it; 
+         for ( it=code_1[quaternary_data].begin() ; it !=code_1[quaternary_data].end(); it++ ){
+	//    std::cout << *it; 
          } 
-         std::cout << "\t"<< frequency << "\n";
+       //std::cout << "\t"<< frequency << "\n";
 	// std::cout <<"\n";  
     
        }   
@@ -132,7 +141,7 @@ class Huff_tree{
  
  
  Node* root;
-  std::vector<Node*> body;
+ std::vector<Node*> body;
      
  
   //=====================================================================
@@ -198,7 +207,7 @@ Node* construct_tree(){
   
   
   
-  void calculate_expectation (){
+  void calculate_expectation (int blocks){
     typename std::vector<Node*>::iterator iter;
     double expectation = 0;   
   for ( iter=body.begin() ; iter != body.end(); iter++ ){
@@ -208,6 +217,8 @@ Node* construct_tree(){
   }
    std::cout << "=========================================" << "\n";
     cout << "Expectation is" << "\t" << expectation << "\n";
+    cout << "before Huffman" << "\t" << blocks*2 << "\n";
+    cout << (blocks*2)/expectation << "\n";
     std::cout << "=========================================" << "\n";
   }
   
@@ -234,11 +245,15 @@ Node* construct_tree(){
 
 //=========================================================================
 
-  void bite_cost () {
+  void bite_cost (vector <double> &costs ) {
     double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
-    double weight [4];
-    for (int i = 0; i<20; i++) {
-      double weight [4] = {0.0, 0.0, 0.0, 0.0};
+    double weight[4];
+    for (int i = 0; i<21; i++) {
+      weight[0] = 0.0;
+      weight[1] = 0.0;
+      weight[2] = 0.0;
+      weight[3] = 0.0;
+ //     = {0.0, 0.0, 0.0, 0.0};
       typename std::vector<Node*>::iterator iter;
       for ( iter=body.begin() ; iter != body.end(); iter++ ){
 	if (!(*iter)->exist_child){
@@ -252,22 +267,34 @@ Node* construct_tree(){
 	  }
         }
       }
-      std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
+  // std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
       weight_old[0]= weight [0];
       weight_old[1]= weight [1];
       weight_old[2]= weight [2];
       weight_old[3]= weight [3];
            
     }
-     std::cout << "=========================================" << "\n";
+   
+    costs.push_back(weight [0]);
+    costs.push_back(weight [1]);
+    costs.push_back(weight [2]);
+    costs.push_back(weight [3]);
+  
+           
+  // result << weight[0] << "\t" << weight[1] << "\t" << weight[2] << "\t" << weight[3] << "\n";
+   //std::cout << "=========================================" << "\n";
   }
   
   //=============================================================================
-  void bite_cost_2 (int blocks) {
+  void bite_cost_2 (int blocks, vector <double> &costs) {
     double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
     double weight [4];
     for (int i = 0; i<20; i++) {
-      double weight [4] = {0.0, 0.0, 0.0, 0.0};
+       weight[0] = 0.0;
+      weight[1] = 0.0;
+      weight[2] = 0.0;
+      weight[3] = 0.0;
+      
       typename std::vector<Node*>::iterator iter;
       for ( iter=body.begin() ; iter != body.end(); iter++ ){
 	if (!(*iter)->exist_child){
@@ -276,39 +303,58 @@ Node* construct_tree(){
 	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
 	      block_weight +=  weight_old[(*it2)];
 	  }
-	  weight[(*iter)->quaternary_data[0]]+= (*iter)->frequency*(weight_old[(*iter)->quaternary_data[0]]/block_weight)*(*iter)->encoded.size()*blocks;
+	  weight[(*iter)->quaternary_data[0]]+= (!block_weight)? 1e-12: (*iter)->frequency*(weight_old[(*iter)->quaternary_data[0]]/block_weight)*(*iter)->encoded.size()*blocks;
 	  //for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
 	   //   weight[(*it2)] +=  (*iter)->frequency*(weight_old[(*it2)]/block_weight)*(*iter)->encoded.size();
 	 // }
         }
       }
-      std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
+    //  std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
       weight_old[0]= weight [0];
       weight_old[1]= weight [1];
       weight_old[2]= weight [2];
       weight_old[3]= weight [3];
     }
+    costs.push_back(weight [0]);
+    costs.push_back(weight [1]);
+    costs.push_back(weight [2]);
+    costs.push_back(weight [3]);
+  
   }
   
   
  //======================================================================== 
-  void string_encode (std::vector<int> string_snp, int blocks, std::map< std::vector<int>, std::vector<bool> > &code_1) {
+   void string_encode (std::vector<int> string_snp, int blocks, std::map< std::vector<int>, std::vector<bool> > &code_1, int &cur_length) {
     std::vector<int>::iterator it;
     std::vector<bool>::iterator it2;
     std::vector<int> part;
-    int i = 1;
+    int i = 0;
+    
+    cout << "Source string:  ";
+    for ( it=string_snp.begin() ; it != string_snp.end(); it++ ){
+      cout << *it;
+    }
+    cout << "  length = " << string_snp.size()<<  "\n";
+    cout << "Encoded string:  " ;
      for ( it=string_snp.begin() ; it != string_snp.end(); it++ ){
-       part.push_back (*it);
-       if (i=blocks) {
+       //cout << *it;
+       part.push_back(*it);
+       i++;
+     
+       if (i == blocks) {
+	// cout << code_1[part].size()<< "\t";
 	 for ( it2=code_1[part].begin() ; it2 != code_1[part].end(); it2++ ){
       	 cout << *it2;
+	 cur_length++;
 	 }
-	 i = 1;
-	 part.clear ();
+	 i = 0;
+	 part.clear();
       }
-      i++;
+      
      	          
-    } 
+    }
+    cout << "  length = " << cur_length<<  "\n";
+    
   }
   
 };// end of class Huff_tree;
@@ -375,7 +421,9 @@ public:
       symbol_probability[*it] += 1/length;
 	          
     } 
-    cout << "======"<< symbol_probability[0] << "\t" <<  symbol_probability[1] << "\t" <<  symbol_probability[2] << "\t" <<  symbol_probability[3] << "\n" ;
+  //  cout << "============================================"<< "\n" ;
+   // cout << symbol_probability[0] << "\t" <<  symbol_probability[1] << "\t" <<  symbol_probability[2] << "\t" <<  symbol_probability[3] << "\n" ;
+   // cout << "============================================"<< "\n" ;
    return symbol_probability;		 
   //return *new std::map<int, double>;
      
@@ -385,7 +433,9 @@ public:
 
   
 int main(int argc, char **argv) {
-    std::cout << "Hello, world!" << std::endl;
+   ofstream result("result.txt");  
+  result << "Snp" << "\t"<< "blocks" << "\t"<< "length" <<"\t"<< "cost[0]" << "\t"<< "cost[1]" << "\t"<< "cost[2]" << "\t"<< "cost[3]" << "\n";
+  std::cout << "Hello, world!" << std::endl;
     
    // std::map<int, double> letter_probability;
    
@@ -397,20 +447,86 @@ int main(int argc, char **argv) {
    std::map<int, std::vector<bool> > code;
    std::map< std::vector<int>, std::vector<bool> > code_1;
    std::vector<int> row;
-  int blocks = 2;
-  
-  
+   
+  int blocks;
   
   Genotypes* genotype = new Genotypes ("hapmap-ceu.bed", 60, 2239392);
-  genotype->vector_for_snp(390, row);
-  Huff_tree <int, double>* tree = new Huff_tree <int, double>;
-  tree->make_leafs((genotype->string_frequency(row)), blocks); 
-  tree->construct_tree()->fill(prefix,code);
-  tree->root->print(code_1);
-  tree->calculate_expectation();
-  tree->bite_cost(); 
- // tree->bite_cost_2(blocks);
-  tree->string_encode(row, blocks,code_1);
+  
+  
+  for (int snp_number = 0; snp_number < 100; snp_number++){
+ cout << "snp  " << snp_number << "\n";
+    int optimal_blocks;
+  int min_length = 400;
+  int cur_length = 0;
+  vector<double> costs;
+  
+   genotype->vector_for_snp(snp_number, row);
+    
+  for (blocks = 2; blocks < 6; blocks++){
+    cout <<"blocks: " << "\t" << blocks << "\n";
+    Huff_tree <int, double>* tree = new Huff_tree <int, double>;
+    tree->make_leafs((genotype->string_frequency(row)), blocks); 
+    tree->construct_tree()->fill(prefix,code);
+    tree->root->print(code_1);
+    tree->string_encode(row, blocks, code_1, cur_length);
+  
+    if (cur_length < min_length)  {
+    min_length = cur_length;
+    optimal_blocks = blocks;
+    costs.clear();
+    tree->bite_cost_2(blocks, costs);
+      
+    }
+  else {
+    result << snp_number << "\t" << optimal_blocks  << "\t" << min_length  ;
+    vector<double>::iterator it;
+    for (it = costs.begin()  ; it != costs.end(); it++ ){
+      if (*it >0.0000005){
+      result << "\t" << (*it);
+	
+      } 
+      else{result << "\t" << 0;
+	
+      }
+    }
+    result << "\n";
+      //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
+    tree->calculate_expectation(blocks);
+    
+    
+    break;
+    
+  }
+  if (blocks == 5){
+    result << snp_number << "\t" << optimal_blocks  << "\t" << min_length  ;
+    vector<double>::iterator it;
+    for (it = costs.begin()  ; it != costs.end(); it++ ){
+      if (*it >0.0000005){
+      result << "\t" << (*it);
+	
+      } 
+      else{result << "\t" << 0;
+	
+      }
+    }
+    result << "\n";
+      //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
+    tree->calculate_expectation(blocks);
+  }
+  
+  cur_length =0;
+   prefix.clear();
+   code.clear();
+   code_1.clear();
+   
+  }
+  
+   row.clear();
+  }
+  
+  
+  
+  
   return 0;
     
 }
