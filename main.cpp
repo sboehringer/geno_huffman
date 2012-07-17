@@ -9,8 +9,8 @@
 #include <map>
 #include <stdio.h>
 #include "math.h"
-
-
+#include <time.h>
+#include <ctime>
 #include <stdlib.h>
 #include <string.h>
 
@@ -31,8 +31,8 @@ class Huff_tree{
     body;
   }
   ~Huff_tree(){
-    delete root;
-    delete body;
+   // delete root;
+   // delete body;
   }
   
   
@@ -49,7 +49,7 @@ class Huff_tree{
     Node* right_child;
     bool exist_child;
     std::vector<bool> encoded;
-    
+    bool is_root;
     Node (Node* left, Node* right){
       left_child = left;
       right_child = right;
@@ -58,7 +58,7 @@ class Huff_tree{
       data = 0;         
       quaternary_data;
       encoded;
-      
+      is_root = false;
     }
     
     Node (Frequency f, DataType d, std::vector<int> quater){
@@ -69,12 +69,23 @@ class Huff_tree{
       exist_child = false;
       quaternary_data = quater;
       encoded;
+      is_root = false;
     }
     
     Node(){
       frequency = 0;            
     }
-     
+    
+    ~Node(){
+    // cout << data << "\n";
+      if(exist_child){
+	 delete right_child;
+	 delete left_child;
+	
+       }
+       
+       
+     }
 
    bool operator()(Node* a, Node* b){
       if (a->frequency < b->frequency){
@@ -99,8 +110,12 @@ class Huff_tree{
 	
     }
     else{
-      
+      if (is_root){
+	encoded.push_back(0);
+      }
+      else{
     encoded = prefix;
+      }
     }
          
   }
@@ -113,25 +128,47 @@ class Huff_tree{
          right_child->print(code_1);
 	 
        }
+
        else{
-         std::vector<bool>::iterator it;
-	 std::vector<int>::iterator it2;
+         
 	 code_1[quaternary_data] = encoded;
+  
+
+#if 0
+	 std::vector<bool>::iterator it;
+	 std::vector<int>::iterator it2;
          for ( it2=quaternary_data.begin() ; it2 != quaternary_data.end(); it2++ ){
-	//    std::cout << *it2; 
+	    std::cout << *it2; 
          } 
-	//std::cout << "\t";
+	std::cout << "\t";
 	 
          for ( it=code_1[quaternary_data].begin() ; it !=code_1[quaternary_data].end(); it++ ){
-	//    std::cout << *it; 
+	   std::cout << *it; 
          } 
-       //std::cout << "\t"<< frequency << "\n";
-	// std::cout <<"\n";  
-    
-       }   
+     // std::cout << "\t"<< frequency << "\n";
+	  
+
+         
+std::cout <<"\n"; 
+	 
+#endif
+      }
     }
     
- 
+ void clear_tree(){
+ // cout << "aaa\n";
+  if(right_child->exist_child){
+    right_child->clear_tree();
+    left_child->clear_tree();
+    
+  }
+  else{
+    //cout << "aaa\n";
+    delete right_child;
+    delete left_child;
+  }
+  
+}
    
 }; // end of class Node
 //======================================================
@@ -142,7 +179,7 @@ class Huff_tree{
  
  Node* root;
  std::vector<Node*> body;
-     
+ typename std::vector<Node*>::iterator body_iterator;    
  
   //=====================================================================
   void make_leafs(Huff_tree::Huff_map letter_probability, int blocks) {
@@ -152,24 +189,35 @@ class Huff_tree{
     
     Frequency freq;
     for (int i = 0 ; i < max; i++){
+      bool zero_prob = false;
       length = 0;
       int copy_i = i;
       freq = 1;
       while (length < blocks){
 	if (copy_i > 0){
+	  if (letter_probability[(copy_i % 4)]== 0){
+	    zero_prob = true;
+	    break;
+	  }
+	    
 	    freq *= letter_probability[(copy_i % 4)];
 	    
 	    copy_i /= 4;
          }	
 	else{
+	  if (letter_probability[0] == 0){
+	    zero_prob = true;
+	    break;
+	  }
 	 freq *= letter_probability[0];
    
 	}
 	length++;
      }
+     if (!zero_prob){
     Node* dataNode = new Node(freq, i, quaternary_convertion(i , blocks)); 
      body.push_back(dataNode);
-      
+     }
     }   
    
 }  
@@ -178,11 +226,11 @@ class Huff_tree{
 Node* construct_tree(){
     priority_queue<Node*, vector<Node*>, Node> pqueue;
         
-     Huff_tree::Huff_iterator it;
-    typename std::vector<Node*>::iterator iter;
      
-  for (iter=body.begin(); iter != body.end(); iter++ ){
-      pqueue.push(*iter);
+    
+     
+  for (body_iterator=body.begin(); body_iterator != body.end(); body_iterator++ ){
+      pqueue.push(*body_iterator);
   }
     
  
@@ -192,6 +240,8 @@ Node* construct_tree(){
        pqueue.pop();
        if (pqueue.empty()){
           root = top;
+	  root->is_root = true;
+	//  cout << "find_root" << "\n";
        }
        else {
         Node* top2 = pqueue.top();
@@ -199,7 +249,7 @@ Node* construct_tree(){
         pqueue.push(new Node(top, top2));
        }
    }
-  // std::cout << "find_root" << std::endl;
+   std::cout << body.size() << std::endl;
    int size = pqueue.size();
        return root; 
 }
@@ -208,12 +258,12 @@ Node* construct_tree(){
   
   
   void calculate_expectation (int blocks){
-    typename std::vector<Node*>::iterator iter;
+    
     double expectation = 0;   
-  for ( iter=body.begin() ; iter != body.end(); iter++ ){
-    if (!(*iter)->exist_child){
-    expectation += (*iter)->frequency*(*iter)->encoded.size();
-     }
+  for ( body_iterator=body.begin() ; body_iterator != body.end(); body_iterator++ ){
+   // if (!(*body_iterator)->exist_child){
+    expectation += (*body_iterator)->frequency*(*body_iterator)->encoded.size();
+  //   }
   }
    std::cout << "=========================================" << "\n";
     cout << "Expectation is" << "\t" << expectation << "\n";
@@ -244,7 +294,7 @@ Node* construct_tree(){
   }
 
 //=========================================================================
-
+#if 0
   void bite_cost (vector <double> &costs ) {
     double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
     double weight[4];
@@ -256,7 +306,7 @@ Node* construct_tree(){
  //     = {0.0, 0.0, 0.0, 0.0};
       typename std::vector<Node*>::iterator iter;
       for ( iter=body.begin() ; iter != body.end(); iter++ ){
-	if (!(*iter)->exist_child){
+	//if (!(*iter)->exist_child){
 	  double block_weight = 0;
 	  std::vector<int>::iterator it2;
 	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
@@ -265,7 +315,7 @@ Node* construct_tree(){
 	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
 	    weight[(*it2)] += (!block_weight)? 1e-6: (*iter)->frequency*(weight_old[(*it2)]/block_weight)*(*iter)->encoded.size();
 	  }
-        }
+      //  }
       }
   // std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
       weight_old[0]= weight [0];
@@ -284,32 +334,37 @@ Node* construct_tree(){
   // result << weight[0] << "\t" << weight[1] << "\t" << weight[2] << "\t" << weight[3] << "\n";
    //std::cout << "=========================================" << "\n";
   }
-  
+#endif 
   //=============================================================================
   void bite_cost_2 (int blocks, vector <double> &costs) {
     double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
     double weight [4];
+    
+    double size  =(double) body.size();
     for (int i = 0; i<20; i++) {
-       weight[0] = 0.0;
+      weight[0] = 0.0;
       weight[1] = 0.0;
       weight[2] = 0.0;
       weight[3] = 0.0;
       
-      typename std::vector<Node*>::iterator iter;
-      for ( iter=body.begin() ; iter != body.end(); iter++ ){
-	if (!(*iter)->exist_child){
+      
+      for (body_iterator=body.begin() ; body_iterator != body.end(); body_iterator++ ){
+	//if (!(*body_iterator)->exist_child){
 	  double block_weight = 0;
 	  std::vector<int>::iterator it2;
-	  for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
+	  for ( it2=(*body_iterator)->quaternary_data.begin() ; it2 != (*body_iterator)->quaternary_data.end(); it2++ ){
 	      block_weight +=  weight_old[(*it2)];
 	  }
-	  weight[(*iter)->quaternary_data[0]]+= (!block_weight)? 1e-12: (*iter)->frequency*(weight_old[(*iter)->quaternary_data[0]]/block_weight)*(*iter)->encoded.size()*blocks;
-	  //for ( it2=(*iter)->quaternary_data.begin() ; it2 != (*iter)->quaternary_data.end(); it2++ ){
-	   //   weight[(*it2)] +=  (*iter)->frequency*(weight_old[(*it2)]/block_weight)*(*iter)->encoded.size();
+	  
+	//  weight[(*body_iterator)->quaternary_data[0]]+= (!block_weight)? 1e-12: (*body_iterator)->frequency*(weight_old[(*body_iterator)->quaternary_data[0]]*(1/block_weight))*(*body_iterator)->encoded.size()*blocks;
+	   weight[(*body_iterator)->quaternary_data[0]]+= (1/size)*(weight_old[(*body_iterator)->quaternary_data[0]]/block_weight)*(*body_iterator)->encoded.size()*blocks;
+	     //cout << weight_old[(*body_iterator)->quaternary_data[0]]/block_weight << "\t"<< (max/size) <<"\n";
+	  //for ( it2=(*body_iterator)->quaternary_data.begin() ; it2 != (*body_iterator)->quaternary_data.end(); it2++ ){
+	   //   weight[(*it2)] +=  (*body_iterator)->frequency*(weight_old[(*it2)]/block_weight)*(*body_iterator)->encoded.size();
 	 // }
-        }
+      //  }
       }
-    //  std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
+     // std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
       weight_old[0]= weight [0];
       weight_old[1]= weight [1];
       weight_old[2]= weight [2];
@@ -353,9 +408,19 @@ Node* construct_tree(){
       
      	          
     }
+    
     cout << "  length = " << cur_length<<  "\n";
     
   }
+#if 0 
+  void clear_leafs(){
+  typename std::vector<Node*>::iterator iter;
+      for ( iter=body.begin() ; iter != body.end(); iter++ ){
+	delete (*iter);
+      }
+    
+  }
+#endif 
   
 };// end of class Huff_tree;
 
@@ -421,9 +486,9 @@ public:
       symbol_probability[*it] += 1/length;
 	          
     } 
-  //  cout << "============================================"<< "\n" ;
-   // cout << symbol_probability[0] << "\t" <<  symbol_probability[1] << "\t" <<  symbol_probability[2] << "\t" <<  symbol_probability[3] << "\n" ;
-   // cout << "============================================"<< "\n" ;
+    cout << "============================================"<< "\n" ;
+   cout << symbol_probability[0] << "\t" <<  symbol_probability[1] << "\t" <<  symbol_probability[2] << "\t" <<  symbol_probability[3] << "\n" ;
+    cout << "============================================"<< "\n" ;
    return symbol_probability;		 
   //return *new std::map<int, double>;
      
@@ -433,7 +498,10 @@ public:
 
   
 int main(int argc, char **argv) {
-   ofstream result("result.txt");  
+  long double whole_length = 0.0; 
+  time_t start,end;
+   start = time(NULL);
+   ofstream result("result1.txt");  
   result << "Snp" << "\t"<< "blocks" << "\t"<< "length" <<"\t"<< "cost[0]" << "\t"<< "cost[1]" << "\t"<< "cost[2]" << "\t"<< "cost[3]" << "\n";
   std::cout << "Hello, world!" << std::endl;
     
@@ -447,91 +515,95 @@ int main(int argc, char **argv) {
    std::map<int, std::vector<bool> > code;
    std::map< std::vector<int>, std::vector<bool> > code_1;
    std::vector<int> row;
-   std::vector<double> individ_costs;
-   for(int i =0; i < 60; i++){
+   std::vector<long double> individ_costs;
+  for(int i =0; i < 60; i++){
   individ_costs.push_back(0.0);
     
   }
   int blocks;
   
   Genotypes* genotype = new Genotypes ("hapmap-ceu.bed", 60, 2239392);
+  Huff_tree <int, double>* tree = new Huff_tree <int, double>;
   
-  
-  for (int snp_number = 0; snp_number < 100; snp_number++){
- cout << "snp  " << snp_number << "\n";
-    int optimal_blocks;
+  for (int snp_number = 0; snp_number < 2239392; snp_number++){
+  cout << "snp  " << snp_number << "\n";
+  int optimal_blocks;
   int min_length = 400;
   int cur_length = 0;
   vector<double> costs;
   
    genotype->vector_for_snp(snp_number, row);
     
-  for (blocks = 2; blocks < 6; blocks++){
+ for (blocks = 2; blocks < 7; blocks++){
     cout <<"blocks: " << "\t" << blocks << "\n";
-    Huff_tree <int, double>* tree = new Huff_tree <int, double>;
+    tree->body.clear();
+    //tree->root = NULL;
+
     tree->make_leafs((genotype->string_frequency(row)), blocks); 
     tree->construct_tree()->fill(prefix,code);
     tree->root->print(code_1);
     tree->string_encode(row, blocks, code_1, cur_length);
   
+    
     if (cur_length < min_length)  {
     min_length = cur_length;
     optimal_blocks = blocks;
     costs.clear();
     tree->bite_cost_2(blocks, costs);
-      
+     
     }
   else {
     result << snp_number << "\t" << optimal_blocks  << "\t" << min_length  ;
     vector<double>::iterator it;
     for (it = costs.begin()  ; it != costs.end(); it++ ){
-      if (*it >0.0000005){
+      
       result << "\t" << (*it);
-	
-      } 
-      else{result << "\t" << 0;
-	
-      }
+    
     }
+    costs.clear();
     result << "\n";
       
     
       //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
     tree->calculate_expectation(blocks);
-    
+    cur_length =0;
+
+   prefix.clear();
+   code.clear();
+   code_1.clear();
+   delete tree->root;
     
     break;
     
   }
-  if (blocks == 5){
+
+  if (blocks == 6){
     result << snp_number << "\t" << optimal_blocks  << "\t" << min_length  ;
     vector<double>::iterator it;
     for (it = costs.begin()  ; it != costs.end(); it++ ){
-      if (*it >0.0000005){
-      result << "\t" << (*it);
-	
-      } 
-      else{result << "\t" << 0;
-	
-      }
-    }
+         result << "\t" << (*it);
+  }
     result << "\n";
       //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
-    tree->calculate_expectation(blocks);
+    //66666 tree->calculate_expectation(blocks);
   }
   
-  cur_length =0;
+
+cur_length =0;
+
    prefix.clear();
    code.clear();
    code_1.clear();
-   
+   delete tree->root;
+ // tree->root->clear_tree();
+  
   }
   
-  
-  for(int i =0; i < 60; i++){
-  individ_costs[i]+=costs[row[i]];
+  whole_length+=min_length;
+ // for(int i =0; i < 60; i++){
+ // individ_costs[i]+=costs[row[i]];
     
-  }
+ // }
  
  
   
@@ -543,6 +615,9 @@ int main(int argc, char **argv) {
   result_ind << i<< "\t" << individ_costs[i] <<"\n";
     
   }
+  end = time(NULL);
+ cout << "Whole_length:  " << whole_length << "\n";
+  cout <<  difftime(end,start) << "\n";
   
   return 0;
     
