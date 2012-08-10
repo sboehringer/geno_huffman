@@ -1,3 +1,8 @@
+// main.cpp : main project file.
+
+#include "stdafx.h"
+
+
 #include <functional>
 #include <algorithm>
 #include <iostream>
@@ -170,7 +175,7 @@ std::cout <<"\t";
  typename std::vector<Node*>::iterator body_iterator;    
  
   //=====================================================================
-  void make_leafs(Huff_tree::Huff_map letter_probability, int blocks, int &freq_symb) {
+  void make_leafs(typename Huff_tree::Huff_map letter_probability, int blocks, int &freq_symb) {
        int length = 0;
     //Huff_tree::Huff_map &leafs = * new Huff_tree::Huff_map();
    const int max = (int)pow(4.0, (double)blocks);
@@ -296,7 +301,7 @@ Node* construct_tree(){
     std::vector<int> quaternary;
     
       int copy_i = i;
-      while (quaternary.size() < blocks){
+      while (blocks > (int)quaternary.size()){
 	if (copy_i > 0){
 	  int r = copy_i % 4;
 	  quaternary.push_back(r);
@@ -396,7 +401,7 @@ Node* construct_tree(){
      	          
     }
     if (part.size() > 0){
-      while (part.size() < blocks){
+      while (blocks > (int)part.size()){
 	part.push_back(freq_symb);
       }
       for ( it2=code_1[part].begin() ; it2 != code_1[part].end(); it2++ ){
@@ -622,12 +627,12 @@ public:
    
 
    
-   for (int i = start; i < start + window_size and i < Number_of_snps; i++) {
+   for (int i = start; i < start + window_size && i < Number_of_snps; i++) {
       row1.clear ();
       vector_for_snp (i, row1);
       cout << i << "\n";
       neighbours.push_back(rowww);
-      for (int j = i; j < start + window_size and j < Number_of_snps; j++) { //++++ j=i
+      for (int j = i; j < start + window_size && j < Number_of_snps; j++) { //++++ j=i
 	row2.clear ();
         
 	vector_for_snp (j, row2);
@@ -794,17 +799,17 @@ cur_length =0;
  
 int main(int argc, char **argv) {
   
-  const int Number_of_snps = 545080;
-  const int Number_of_ind = 2062;
+  const int Number_of_snps = 2239393;
+  const int Number_of_ind = 60;
   const int window_size = 0;
   
-
+  
 
   long double whole_length = 0.0; 
   time_t start,end;
   start = time(NULL);
   
-   ofstream result("result_plink.txt");  
+   ofstream result("result_test.txt");  
    //make a head of output file
    result << "Snp\tfreq[0]\tfreq[1]\tfreq[2]\tfreq[3]\tblocks\tlength\tcost[0]\tcost[1]\tcost[2]\tcost[3]\n";
    
@@ -813,38 +818,40 @@ int main(int argc, char **argv) {
    
    std::vector<int> row1; //will be string from file
    std::vector<int> row2; //
-   std::vector<long double> individ_costs; //contained average number of bites for each individual
+   std::vector<long double> individ_costs(Number_of_ind, 0.0); //contained average number of bites for each individual
   
    
-   for(int i =0; i < Number_of_ind; i++){
-      individ_costs.push_back(0.0);
-   }
+  // for(int i =0; i < Number_of_ind; i++){
+   //   individ_costs.push_back(0.0);
+   //}
   
   
    
-  Genotypes* genotype = new Genotypes ("narac-plink.bed", Number_of_ind, Number_of_snps);
+  Genotypes* genotype = new Genotypes ("hapmap-ceu.bed", Number_of_ind, Number_of_snps);
   Huff_tree <int, double>* tree = new Huff_tree <int, double>;
- 
-  vector<bool> snp_list; // 0 if snp was already processed, 1 if not
+  
+  vector<bool> snp_list (Number_of_snps, true); // 0 if snp was already processed, 1 if not
 //  genotype->find_all_neighbours(Number_of_snps, Number_of_ind);
   
-  for (int i = 0; i < Number_of_snps; i++) {
-    snp_list.push_back(1) ;
-  }
+  
+  //for (int i = 0; i < Number_of_snps; i++) {
+  //  snp_list.push_back(1) ;
+	std::cout << "Hello, world!" << std::endl;  
+  //}
     
-    
+ 
 
    for (int snp1 = 0; snp1 <5 ; snp1++){
      result << snp1 << "\t";
      
    if (snp_list[snp1]) {
-     cout << "SNP:   " << snp1 << "\n";
+     std::cout << "SNP:   " << snp1 << "\n";
      genotype->vector_for_snp (snp1, row1); //recieve data for SNP and put it in the vector<int> row1
      bool correlated = false; // = true, if we found correlating SNP
      
      vector<double> costs; //estimated bite costs of genotypes
      
-       for (int snp2 = snp1+1; ((snp2 < snp1+window_size )and( snp2 < Number_of_snps)); snp2++) {
+       for (int snp2 = snp1+1; ((snp2 < snp1+window_size )&&( snp2 < Number_of_snps)); snp2++) {
 	
 	 if (snp_list[snp2]){
 	 vector< vector <double> > prob_matrix;
