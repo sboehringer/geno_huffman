@@ -55,7 +55,8 @@ class Huff_tree{
     bool exist_child;
     std::vector<bool> encoded;
     bool is_root;
-    Node (Node* left, Node* right){
+   
+	Node (Node* left, Node* right){
       left_child = left;
       right_child = right;
       exist_child = true;
@@ -69,8 +70,8 @@ class Huff_tree{
     Node (Frequency f, DataType d, std::vector<int> quater){
       frequency = f;
       data  = d;
-      this->left_child = 0;
-      this->right_child = 0;
+      left_child = NULL;
+      right_child = NULL;
       exist_child = false;
       quaternary_data = quater;
       encoded;
@@ -78,7 +79,9 @@ class Huff_tree{
     }
     
     Node(){
-      frequency = 0;            
+      frequency = 0;
+	  exist_child = false;
+	  is_root = false;
     }
     
     ~Node(){
@@ -96,8 +99,30 @@ class Huff_tree{
       if (a->frequency < b->frequency){
 	return false;
       }
-      else {return true;}
-    }
+	  
+      else {
+		  if (a->frequency == b->frequency){
+			  if (!a->exist_child && !b->exist_child){
+			  if (a->data < b->data){
+				  return false;
+			  }
+			  else {
+				  return true;
+			  }
+			  }
+			  else {
+				  if (a->left_child > b->left_child){
+					  return true;}
+				  else{
+				  return false;
+				  }
+			  }
+		  }
+		  else{
+			  return true;
+	     }
+      }
+   }
     
   
   
@@ -176,7 +201,8 @@ std::cout <<"\t";
  
   //=====================================================================
   void make_leafs(typename Huff_tree::Huff_map letter_probability, int blocks, int &freq_symb) {
-       int length = 0;
+      
+	  int length = 0;
     //Huff_tree::Huff_map &leafs = * new Huff_tree::Huff_map();
    const int max = (int)pow(4.0, (double)blocks);
    double max_freq = 0;
@@ -248,14 +274,19 @@ Node* construct_tree(){
     priority_queue<Node*, vector<Node*>, Node> pqueue;
         
    //  cout << "in construct tree()" << "\n";
-    
-     
-  for (body_iterator=body.begin(); body_iterator != body.end(); body_iterator++ ){
-      pqueue.push(*body_iterator);
-     // cout<< (*body_iterator)->data << "\n";
+    //cout << body.size() << "\n";
+  int size1 = (int)body.size();
+  for( int i = 0; i < size1; i++){
+  pqueue.push(body[i]);
   }
+
+//  for (body_iterator=body.begin(); body_iterator != body.end(); body_iterator++ ){
+  //    pqueue.push(*body_iterator);
+//	  std::cout << "Hello, world!111" << std::endl; 
+     // cout<< (*body_iterator)->data << "\n";
+ // }
     
- 
+ //std::cout << "Hello, world!111" << std::endl; 
   while (!pqueue.empty()){
     
        Node* top = pqueue.top();
@@ -272,7 +303,8 @@ Node* construct_tree(){
        }
    }
    std::cout << "Leafs:  " << body.size() << std::endl;
-   int size = pqueue.size();
+   int size = (int)pqueue.size();
+   
        return root; 
 }
 //=========================================================================== 
@@ -696,13 +728,14 @@ public:
   const int max_block_size = 4;
   const int min_block_size = 2;
   int freq_symb;
-   for (int blocks = min_block_size; blocks < max_block_size; blocks++){
+     for (int blocks = min_block_size; blocks < max_block_size; blocks++){
     cout <<"blocks: " << "\t" << blocks << "\n";
     tree.body.clear();
     //tree->root = NULL;
 
     tree.make_leafs((genotype.string_frequency(row1, result,blocks)), blocks,  freq_symb); 
     tree.construct_tree()->fill(prefix,code);
+	
     tree.root->print(code_1);
     tree.string_encode(row1, blocks, code_1, cur_length,  freq_symb);
  
@@ -836,11 +869,11 @@ int main(int argc, char **argv) {
   
   //for (int i = 0; i < Number_of_snps; i++) {
   //  snp_list.push_back(1) ;
-	std::cout << "Hello, world!" << std::endl;  
+	 
   //}
     
  
-
+  std::cout << "Hello, world!" << std::endl; 
    for (int snp1 = 0; snp1 <5 ; snp1++){
      result << snp1 << "\t";
      
@@ -854,16 +887,17 @@ int main(int argc, char **argv) {
        for (int snp2 = snp1+1; ((snp2 < snp1+window_size )&&( snp2 < Number_of_snps)); snp2++) {
 	
 	 if (snp_list[snp2]){
-	 vector< vector <double> > prob_matrix;
+	
 	 
 	 //fill prob_matrix
-	 vector<double> row;
-	 for (int k = 0; k <4; k++){
-	   row.push_back(0.0);
-	 }
-	 for (int l = 0; l<4; l++){
-	   prob_matrix.push_back(row);
-	 }
+	 vector<double> row (4, 0.0);
+	// for (int k = 0; k <4; k++){
+	//   row.push_back(0.0);
+	 //}
+	  vector< vector <double> > prob_matrix (4, row);
+	 //for (int l = 0; l<4; l++){
+	 //  prob_matrix.push_back(row);
+	 //}
 	 
 	 
 	 row2.clear();
@@ -885,7 +919,9 @@ int main(int argc, char **argv) {
       }
        
        if (!correlated){
+		   
        construct_tree_for_blocks(*genotype, *tree, result, snp1, costs, row1, Number_of_ind);
+	   
        }
        else{
 	 
