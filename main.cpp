@@ -180,7 +180,7 @@ class Huff_tree{
 	  
 
          
-std::cout <<"\t"; 
+std::cout <<"\n"; 
 
 
       }
@@ -250,23 +250,23 @@ std::cout <<"\t";
 }  
 
 
-void make_leafs_for_2_snp(vector< vector< double> > &prob_matrix){
+void make_leafs_for_2_snp(map < vector <int> , double> &prob_matrix){
   body.clear();
- // cout << "in make_leafs()" << "\n";
-  for (int i=0; i<4; i++) {
-    for (int j=0; j<4; j++) {
-      vector <int> quater;
-      quater.push_back(i);
-      quater.push_back(j);
-     // cout << prob_matrix[i][j] << "\n";
-   //   cout << (i*4)+j << "\n";
-    if(prob_matrix[i][j]){
-      Node* dataNode = new Node(prob_matrix[i][j], (i*4)+j, quater); 
+  map < vector <int> , double>::iterator it;
+
+  for (it=prob_matrix.begin(); it != prob_matrix.end(); it++ ) {
+	  vector <int>::iterator it_int;
+	  vector <int> vector1 = (*it).first;
+	  int sum = 0;
+	  int power = (int) (*it).first.size();
+	  for (it_int=vector1.begin(); it_int != vector1.end(); it_int++ ){
+		  sum+=(int)pow (4.0, power)*(*it_int);
+		  power--;
+	  }
+	  Node* dataNode = new Node((*it).second, sum, (*it).first); 
      body.push_back(dataNode);
-    }
-    }
-    }
-  
+  }
+      
 }
 
 //=======================================================================
@@ -447,29 +447,28 @@ Node* construct_tree(){
     
   }
   
-     void string_encode_for_corr (std::vector<int> string_snp, std::vector<int> corr_snp,  std::map< std::vector<int>, std::vector<bool> > &code_1, int &cur_length, const int Number_of_ind) {
+     void string_encode_for_corr (vector <vector <int> > &set_cor_snp, vector <int> &cor_snp_number,  std::map< std::vector<int>, std::vector<bool> > &code_1, int &cur_length, const int Number_of_ind) {
     std::vector<int>::iterator it;
     std::vector<bool>::iterator it2;
     std::vector<int> part;
-   
+   vector< vector <int>> :: iterator it_snps;
     
-    cout << "\nSource string1:  ";
-    for ( it=string_snp.begin() ; it != string_snp.end(); it++ ){
-      cout << *it;
+    cout << "Correlated snps:  ";
+    for ( it=cor_snp_number.begin() ; it != cor_snp_number.end(); it++ ){
+      cout << *it << "\t";
     }
-    cout << "  length = " << string_snp.size()<<  "\n";
-    cout << "Source string2:  ";
-    for ( it=corr_snp.begin() ; it != corr_snp.end(); it++ ){
-      cout << *it;
-    }
-    cout << "  length = " << corr_snp.size()<<  "\n";
+	cout << "\n";
+    cout << "  length = " << Number_of_ind*2*(int)cor_snp_number.size()<<  "\n";
+    
    
     
     cout << "Encoded string:  " ;
      for ( int i = 0; i <Number_of_ind; i++){
        //cout << *it;
-       part.push_back(string_snp[i]);
-       part.push_back(corr_snp[i]);
+       for (it_snps = set_cor_snp.begin(); it_snps != set_cor_snp.end(); it_snps++){
+	   part.push_back((*it_snps)[i]);
+	   }
+		
        
       for ( it2=code_1[part].begin() ; it2 != code_1[part].end(); it2++ ){
        cout << *it2;
@@ -564,7 +563,7 @@ public:
   
   //===================================================================================
   
-  bool correlation (const int snp1, const int snp2, vector < vector <double> > &prob_matrix, std::vector<int> &row1, std::vector<int> &row2, const int Number_of_ind) {
+  bool correlation (const int snp1, const int snp2,  std::vector<int> &row1, std::vector<int> &row2, const int Number_of_ind) {
    const double Threshold = 0.81;
     double mean1 = 0.0;
     double mean2 = 0.0;
@@ -594,10 +593,10 @@ public:
         standdiv2+=(row2[i] - mean2)*(row2[i] - mean2);        
 	
       }
-      double k = (prob_matrix.at(row1[i])).at(row2[i]);
-      vector < double> kk = prob_matrix.at(row1[i]);
+//      double k = (prob_matrix.at(row1[i])).at(row2[i]);
+  //    vector < double> kk = prob_matrix.at(row1[i]);
       
-      prob_matrix[row1[i]][row2[i]] += (1.0/Number_of_ind);
+//      prob_matrix[row1[i]][row2[i]] += (1.0/Number_of_ind);
      //cout << (prob_matrix.at(row1[i])).at(row2[i]);
      // cout << correlation << "\t" << row1[i] << "\t" << row2[i]<< "\n";
      }
@@ -636,7 +635,92 @@ public:
    
 }
 
+  void calculate_prob(map < vector <int> , double> &prob_matrix, vector <vector <int>> &set_cor_snp, const int Number_of_ind){
+	  
+	  for (int j = 0; j < Number_of_ind; j++){
+	  vector <int> key;
+	  for (int k = 0; k < (int)set_cor_snp.size(); k++){
+		   key.push_back(set_cor_snp[k][j]);
+	   }
+
+	   if ( prob_matrix[key]){
+	   prob_matrix[key]+=1.0/Number_of_ind;
+	   }
+	   else {
+       prob_matrix[key] = 1.0/Number_of_ind;
+	   }
+	  
+	  }
+
+	  }
+
+
+
+  void blocking_across_snps (const int window_size, const int Number_of_ind, Huff_tree <int, double> &tree){
+	  int position_snp = 0;
+	  vector <int> row1;
+	  vector <int> snp_number;
+	  vector <vector <int>> window;
+	  vector <vector <int>> set_cor_snp;
+	  vector <int> cor_snp_number;
+	  vector < vector <int>> :: iterator it_seq;
+	  vector <int>:: iterator it_number;
+	  while (position_snp < 300){
+	  while ((int) window.size() < window_size)  {
+        row1.clear ();
+        vector_for_snp (position_snp, row1);
+        window.push_back(row1);
+		snp_number.push_back(position_snp);
+		position_snp++;
+	  }
+	  int current_snp = 0;
+	  set_cor_snp.push_back(window[0]);
+	  cor_snp_number.push_back(snp_number[0]);
+	  for (int i=current_snp+1; i<(int)window.size(); i++) {
+		  
+
+	 	    if( correlation (current_snp, i, window[current_snp], window[i], Number_of_ind)){
+				set_cor_snp.push_back(window[i]);
+				cor_snp_number.push_back(snp_number[i]);
+				current_snp = i;
+				it_seq = window.begin() + i;
+				it_number = snp_number.begin() + i;
+				window.erase(it_seq);
+				snp_number.erase(it_number);
+		
+			}
+		}
+	  window.erase(window.begin());
+	  snp_number.erase(snp_number.begin());
+
+	
+	map < vector <int> , double> prob_matrix;
+	calculate_prob(prob_matrix, set_cor_snp, Number_of_ind);
+	tree.make_leafs_for_2_snp(prob_matrix);
+	 std::vector<bool> prefix;
+   std::map<int, std::vector<bool> > code;
+   std::map< std::vector<int>, std::vector<bool> > code_1;
+   int cur_length = 0;
   
+   
+
+     //leafs already exist
+    tree.construct_tree()->fill(prefix,code);
+    
+    tree.root->print(code_1);
+    tree.string_encode_for_corr(set_cor_snp, cor_snp_number, code_1, cur_length, Number_of_ind);
+	cout << "==============================\n";
+   delete tree.root;
+   tree.body.clear();
+    prefix.clear();
+   code.clear();
+   code_1.clear();
+   set_cor_snp.clear();
+   cor_snp_number.clear();
+	  }
+  }
+
+
   
   void find_all_neighbours(const int Number_of_snps, const int Number_of_ind) {
       
@@ -668,7 +752,7 @@ public:
 	row2.clear ();
         
 	vector_for_snp (j, row2);
-        if (correlation(i,j ,prob_matrix,row1,row2, Number_of_ind)) {
+        if (correlation(i,j ,row1,row2, Number_of_ind)) {
 	   
 	  neighbours[i-start].push_back (j);
 	  
@@ -811,7 +895,7 @@ cur_length =0;
     tree.construct_tree()->fill(prefix,code);
     
     tree.root->print(code_1);
-    tree.string_encode_for_corr(row1,row2, code_1, cur_length, Number_of_ind);
+  //  tree.string_encode_for_corr(row1,row2, code_1, cur_length, Number_of_ind);
    // tree.bite_cost_2(1, costs);
     vector<double>:: iterator it;
      for (it = costs.begin()  ; it != costs.end(); it++ ){
@@ -834,7 +918,7 @@ int main(int argc, char **argv) {
   
   const int Number_of_snps = 2239393;
   const int Number_of_ind = 60;
-  const int window_size = 0;
+  const int window_size = 50;
   
   
 
@@ -862,7 +946,8 @@ int main(int argc, char **argv) {
    
   Genotypes* genotype = new Genotypes ("hapmap-ceu.bed", Number_of_ind, Number_of_snps);
   Huff_tree <int, double>* tree = new Huff_tree <int, double>;
-  
+  genotype->blocking_across_snps (window_size, Number_of_ind, *tree);
+#if 0
   vector<bool> snp_list (Number_of_snps, true); // 0 if snp was already processed, 1 if not
 //  genotype->find_all_neighbours(Number_of_snps, Number_of_ind);
   
@@ -903,8 +988,8 @@ int main(int argc, char **argv) {
 	 row2.clear();
 	 genotype->vector_for_snp (snp2, row2); //take data for second snp
          
-	 if(genotype-> correlation (snp1, snp2, prob_matrix, row1, row2, Number_of_ind)){
-	    tree->make_leafs_for_2_snp(prob_matrix);
+	 if(genotype-> correlation (snp1, snp2,  row1, row2, Number_of_ind)){
+	//    tree->make_leafs_for_2_snp(prob_matrix);
 	 
 	 correlated = true;
 	 
@@ -948,7 +1033,7 @@ int main(int argc, char **argv) {
   }
   cout << "Whole_length:  " << whole_length << "\n";
 
-    
+#endif 
   end = time(NULL);
  
   cout <<  difftime(end,start) << "\n";
