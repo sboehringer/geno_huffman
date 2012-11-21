@@ -39,6 +39,7 @@ class Huff_tree{
    // delete root;
    // delete body;
   }
+  Huff_tree(const Huff_tree&);
   
   
 //======================================================
@@ -46,28 +47,27 @@ class Huff_tree{
  class Node {
     public:
     Frequency frequency;
-    DataType data; //symbol of alphabet
+    DataType data; 
   
-   std::vector<vector<int>> quaternary_data;
-  // int code_length;
+   std::vector<vector<int>> quaternary_data; //small matrix with genotypes, which are coded by 0,1,2,3
     Node* left_child;
     Node* right_child;
     bool exist_child;
     std::vector<bool> encoded;
     bool is_root;
    
-	Node (Node* left, Node* right){
+	Node (Node* left, Node* right){ //for internal nodes
       left_child = left;
       right_child = right;
       exist_child = true;
-      this->frequency = left_child->frequency + right_child->frequency;
+      this->frequency = left_child->frequency + right_child->frequency; //frequency of node is sum of left child frequency and right child frequency
       data = 0;         
       quaternary_data;
       encoded;
       is_root = false;
     }
     
-    Node (Frequency f, DataType d, std::vector<vector<int>> quater){
+    Node (Frequency f, DataType d, std::vector<vector<int>> quater){ //for leafs
       frequency = f;
       data  = d;
       left_child = NULL;
@@ -85,17 +85,15 @@ class Huff_tree{
     }
     
     ~Node(){
-    // cout << data << "\n";
-      if(exist_child){
+    
+	 if(exist_child){
 	 delete right_child;
 	 delete left_child;
-	
-       }
-       
-       
+	 }
+           
      }
 
-   bool operator()(Node* a, Node* b){
+   bool operator()(Node* a, Node* b){ //compare 2 nodes using their frequencies
       if (a->frequency < b->frequency){
 	return false;
       }
@@ -127,11 +125,9 @@ class Huff_tree{
   
   
   //==========================================
-  void fill(std::vector<bool> prefix, std::map<DataType, std::vector<bool> >& code){
-        
-      
+  void fill(std::vector<bool> prefix, std::map<DataType, std::vector<bool> >& code){ //fill the tree; for every left child edge will be 0, for right child - 1. The way from root to leaf is the code.
+           
     if (exist_child){
-    //  std::cout << "Hello, world!" << std::endl;  
       prefix.push_back(0);
       left_child->fill(prefix, code);
       prefix.pop_back();
@@ -152,20 +148,18 @@ class Huff_tree{
   }
   
   //============================================
-  void print(std::map< std::vector<vector<int>>, std::vector<bool> > &code_1){
+  void print(std::map< std::vector<vector<int>>, std::vector<bool> > &code_1){ //print the leafs and their codes on the screen
     
        if (exist_child){
          left_child->print(code_1);
          right_child->print(code_1);
-	 
-       }
+	   }
 
        else{
          
 	 code_1[quaternary_data] = encoded;
   
-
-
+	 
 	 std::vector<bool>::iterator it;
 	 std::vector<vector<int>>::iterator it2;
 	 std::vector<int>::iterator it3;
@@ -183,92 +177,32 @@ class Huff_tree{
          } 
      std::cout << "\t"<< frequency << "\n";
 	  
-
-         
-std::cout <<"\n"; 
+	 std::cout <<"\n"; 
 
 
       }
     }
     
-
    
 }; // end of class Node
 //======================================================
 //=======================================================
     
- 
- 
+  
  
  Node* root;
  std::vector<Node*> body;
  typename std::vector<Node*>::iterator body_iterator;    
  
   //=====================================================================
-#if 0 
- void make_leafs(typename Huff_tree::Huff_map letter_probability, int blocks, int &freq_symb) {
-      
-	  int length = 0;
-    //Huff_tree::Huff_map &leafs = * new Huff_tree::Huff_map();
-   const int max = (int)pow(4.0, (double)blocks);
-   double max_freq = 0;
-   for (int k =0; k < 4; k++){
-     if (letter_probability[k] > max_freq){
-       max_freq = letter_probability[k];
-       freq_symb = k;
-     }
-   }
-    
-    Frequency freq;
-    for (int i = 0 ; i < max; i++){
-      bool zero_prob = false;
-      length = 0;
-      int copy_i = i;
-      freq = 1;
-      while (length < blocks){
-	if (copy_i > 0){
-	  if (letter_probability[(copy_i % 4)]== 0){
-	    zero_prob = true;
-	    break;
-	  }
-	    
-	    freq *= letter_probability[(copy_i % 4)];
-	    
-	    copy_i /= 4;
-         }	
-	else{
-	  if (letter_probability[0] == 0){
-	    zero_prob = true;
-	    break;
-	  }
-	 freq *= letter_probability[0];
-   
-	}
-	length++;
-     }
-     if (!zero_prob){
-    Node* dataNode = new Node(freq, i, quaternary_convertion(i , blocks)); 
-     body.push_back(dataNode);
-     
-     }
-    }   
-   
-}  
-#endif
 
-void make_leafs_for_2_snp(map < vector<vector <int>> , double> &prob_matrix){
+
+void make_leafs_for_2_snp(map < vector<vector <int>> , double> &prob_matrix){ //for every element from prob_matrix create leaf
   body.clear();
   map < vector<vector <int>> , double>::iterator it;
   int d = 0;
- for (it=prob_matrix.begin(); it != prob_matrix.end(); it++ ) {
-	//  vector <int>::iterator it_int;
-	 // vector <int> vector1 = (*it).first;
-	//  int sum = 0;
-	 // int power = (int) (*it).first.size();
-	//  for (it_int=vector1.begin(); it_int != vector1.end(); it_int++ ){
-	//	  sum+=(int)pow (4.0, power)*(*it_int);
-	//	  power--;
-	//  }
+  for (it=prob_matrix.begin(); it != prob_matrix.end(); it++ ) {
+
 	 if ((*it).second != 0.0){
 	  Node* dataNode = new Node((*it).second, d, (*it).first); 
      body.push_back(dataNode);
@@ -279,23 +213,14 @@ void make_leafs_for_2_snp(map < vector<vector <int>> , double> &prob_matrix){
 }
 
 //=======================================================================
-Node* construct_tree(){
-    priority_queue<Node*, vector<Node*>, Node> pqueue;
+Node* construct_tree(){ //join all leafs into tree
+	priority_queue<Node*, vector<Node*>, Node> pqueue;
         
-   //  cout << "in construct tree()" << "\n";
-    //cout << body.size() << "\n";
   int size1 = (int)body.size();
   for( int i = 0; i < size1; i++){
   pqueue.push(body[i]);
   }
 
-//  for (body_iterator=body.begin(); body_iterator != body.end(); body_iterator++ ){
-  //    pqueue.push(*body_iterator);
-//	  std::cout << "Hello, world!111" << std::endl; 
-     // cout<< (*body_iterator)->data << "\n";
- // }
-    
- //std::cout << "Hello, world!111" << std::endl; 
   while (!pqueue.empty()){
     
        Node* top = pqueue.top();
@@ -303,7 +228,6 @@ Node* construct_tree(){
        if (pqueue.empty()){
           root = top;
 	  root->is_root = true;
-	//  cout << "find_root" << "\n";
        }
        else {
         Node* top2 = pqueue.top();
@@ -317,175 +241,69 @@ Node* construct_tree(){
        return root; 
 }
 //=========================================================================== 
-  
-  
-#if 0
-  void calculate_expectation (const int blocks){
+void bite_cost (vector<vector <double>> &costs_cor, vector <vector <int>> &set_cor_snp, vector <long double> &individ_costs_add, const int Number_of_ind, const int blocks) {//calculate bit costs for correlated SNPs.
+	//Bit cost characterizes contribution of given genotype into weight of whole block. Weight of block is the number of bits required for encoding this block. 
+    vector <double> weight_old_row (4, 1.0); //
+	int Number_of_corr_snp = (int)set_cor_snp.size();
+	vector< vector <double>> weight_old (Number_of_corr_snp, weight_old_row);
+   	
+    const int Niteration = 30; 
     
-    double expectation = 0;   
-  for ( body_iterator=body.begin() ; body_iterator != body.end(); body_iterator++ ){
-   // if (!(*body_iterator)->exist_child){
-    expectation += (*body_iterator)->frequency*(*body_iterator)->encoded.size();
-  //   }
-  }
-   std::cout << "=========================================" << "\n";
-    cout << "Expectation is" << "\t" << expectation << "\n";
-    cout << "before Huffman" << "\t" << blocks*2 << "\n";
-    cout << (blocks*2)/expectation << "\n";
-    std::cout << "=========================================" << "\n";
-  }
+    double size = (double) body.size();
+    for (int i = 0; i<Niteration; i++) { //iterative algorithm; number of iteration equals 30; usually it is enough for accurate calculation.
+		vector <double> weight_row (4, 0.0);
+		vector< vector <double>> weight (Number_of_corr_snp, weight_row);
   
-//========================================================================== 
- 
- std::vector<int> quaternary_convertion(const int i, const int blocks) {
-  
-    std::vector<int> quaternary;
-    
-      int copy_i = i;
-      while (blocks > (int)quaternary.size()){
-	if (copy_i > 0){
-	  int r = copy_i % 4;
-	  quaternary.push_back(r);
-	  copy_i /= 4;
-         }	
-	 else{
-	 quaternary.push_back(0);
-   
-         }
-       }
-       return quaternary;
-  }
+		for (body_iterator=body.begin() ; body_iterator != body.end(); body_iterator++ ){
 
-//=========================================================================
+			double block_weight = 0;
+			for ( int k = 0; k < Number_of_corr_snp ; k++){ //calculate the weight of block, based on previous estimations
+				for (int l = 0; l < blocks; l++){ 
+					block_weight +=  weight_old[k][(*body_iterator)->quaternary_data[k][l]];
+				}
+			}
 
-  void bite_cost_2 (const int blocks, vector <double> &costs) {
-    double weight_old [4] = {1.0, 1.0, 1.0, 1.0};
-    double weight [4];
-    const int Niteration = 20;
-    
-    double size  =(double) body.size();
-    for (int i = 0; i<Niteration; i++) {
-      weight[0] = 0.0;
-      weight[1] = 0.0;
-      weight[2] = 0.0;
-      weight[3] = 0.0;
-      int diff_blocks = 0;
-      std::map< std::vector<int>, bool >::iterator iter1;
+			  	  
+			for (int k   = 0; k < Number_of_corr_snp ; k++){// calculate new weights, based on previous estimations 
+				for (int l = 0; l < blocks; l++){
+					weight[k][(*body_iterator)->quaternary_data[k][l]] +=  (1/size)*(weight_old[k][(*body_iterator)->quaternary_data[k][l]]/block_weight)*(*body_iterator)->encoded.size();
+				} 
+			}
       
-      
-      for (body_iterator=body.begin() ; body_iterator != body.end(); body_iterator++ ){
-	//if (!(*body_iterator)->exist_child){
-	//  if (is_in_string[(*body_iterator)->quaternary_data] == 1){
-	  double block_weight = 0;
-	  std::vector<int>::iterator it2;
-//	  for ( it2=(*body_iterator)->quaternary_data.begin() ; it2 != (*body_iterator)->quaternary_data.end(); it2++ ){
-//	      block_weight +=  weight_old[(*it2)];
-//	  }
+		}
+  
+		weight_old = weight;
 	  
-	   
-	   
-	   
-	 //  weight[(*body_iterator)->quaternary_data[0]]+= (1/size)*(weight_old[(*body_iterator)->quaternary_data[0]]/block_weight)*(*body_iterator)->encoded.size()*blocks;
-	     
-	   
-	   
-//	  for ( it2=(*body_iterator)->quaternary_data.begin() ; it2 != (*body_iterator)->quaternary_data.end(); it2++ ){
-//	      weight[(*it2)] +=  (1/size)*(weight_old[(*it2)]/block_weight)*(*body_iterator)->encoded.size();
-//	  }
-      //  }
-      
-    //  }
-      }
-   //  std::cout << weight[0] << "\t" << "\t" << weight[1] << "\t" <<"\t" <<  weight[2] << "\t" << "\t" << weight[3] << "\n";
-      weight_old[0]= weight [0];
-      weight_old[1]= weight [1];
-      weight_old[2]= weight [2];
-      weight_old[3]= weight [3];
     }
-    costs.push_back(weight [0]);
-    costs.push_back(weight [1]);
-    costs.push_back(weight [2]);
-    costs.push_back(weight [3]);
-  
-  }
-  
-  
- //======================================================================== 
-
-  void string_encode (std::vector<int> string_snp, const int blocks, std::map< std::vector<vector<int>>, std::vector<bool> > &code_1, int &cur_length,  int &freq_symb) {
-    std::vector<int>::iterator it;
-    std::vector<bool>::iterator it2;
-    std::vector<int> part;
-    int i = 0;
+	costs_cor = weight_old;
+   
+	for (int k = 0; k  < Number_of_corr_snp; k++){// increase individual costs
+		for (int l = 0; l < Number_of_ind; l++) {
+			individ_costs_add[l] += (long double)costs_cor[k][set_cor_snp[k][l]];
+		}
+	}
+ 
+}
     
-    cout << "Source string:  ";
-    for ( it=string_snp.begin() ; it != string_snp.end(); it++ ){
-     cout << *it;
-    }
-    cout << "  length = " << string_snp.size()<<  "\n";
-  //  cout << "Encoded string:  " ;
-     for ( it=string_snp.begin() ; it != string_snp.end(); it++ ){
-       //cout << *it;
-       part.push_back(*it);
-       i++;
-     
-       if (i == blocks) {
-	// cout << code_1[part].size()<< "\t";
-	 for ( it2=code_1[part].begin() ; it2 != code_1[part].end(); it2++ ){
-      	// cout << *it2;
-	 cur_length++;
-	 }
-	 i = 0;
-	 
-	 part.clear();
-      }
-      
-     	          
-    }
-    if (part.size() > 0){
-      while (blocks > (int)part.size()){
-	part.push_back(freq_symb);
-      }
-      for ( it2=code_1[part].begin() ; it2 != code_1[part].end(); it2++ ){
-      	// cout << *it2;
-	 cur_length++;
-	 }
-      
-    }
-    
-    cout << "  length = " << cur_length<<  "\n";
-    
-  }
-#endif 
-
 
 void string_encode_for_corr (vector <vector <int> > &set_cor_snp, vector <int> &cor_snp_number,  std::map< std::vector <vector<int>>, std::vector<bool> > &code_1, int &cur_length, const int Number_of_ind, const int blocks, vector <bool> &cur_string) {
-    std::vector<int>::iterator it;
-    std::vector<bool>::iterator it2;
+    // encode snp string using calculated code 
+	std::vector<bool>::iterator it2;
     std::vector <vector<int>> part;
    vector< vector <int>> :: iterator it_snps;
     
-   // cout << "Correlated snps:  ";
-   // for ( it=cor_snp_number.begin() ; it != cor_snp_number.end(); it++ ){
-   //   cout << *it << "\t";
-  //  }
-	cout << "\n";
+ 	cout << "\n";
     cout << "  length = " << Number_of_ind*2*(int)cor_snp_number.size()<<  "\n";
     
-   
-    
-  //  cout << "Encoded string:  " ;
-     for ( int i = 0; i <Number_of_ind; i+=blocks){
-       //cout << *it;
-       for (it_snps = set_cor_snp.begin(); it_snps != set_cor_snp.end(); it_snps++){
+      for ( int i = 0; i <Number_of_ind; i+=blocks){
+          for (it_snps = set_cor_snp.begin(); it_snps != set_cor_snp.end(); it_snps++){
 	   vector <int> r((*it_snps).begin()+i,(*it_snps).begin()+i+blocks);
 		   part.push_back(r);
 	   }
 		
        
       for ( it2=code_1[part].begin() ; it2 != code_1[part].end(); it2++ ){
-      // cout << *it2;
-		cur_string.push_back(*it2);
+ 	   cur_string.push_back(*it2);
 	   cur_length++;
 	}
 	 
@@ -507,11 +325,11 @@ public:
   unsigned char start[3];
   int Nid, Nsnps;
   
- Genotypes(char *filename, int Nid1, int Nsnps1) : Nid(Nid1), Nsnps(Nsnps1) {
+ Genotypes(char *filename, int Nid1, int Nsnps1) : Nid(Nid1), Nsnps(Nsnps1) {//read input file
     char *file = filename;
    FILE *in = fopen(file, "r");
   if (!in)
-    cout << "Couln't open input file: %s" << "\t" << file <<"\n";
+    cout << "Couln't open input file: " << "\t" << file <<"\n";
   
   if (fread(start, 1, 3, in)!=3)
     cout << "Failed to read first 3 bytes" << "\n";
@@ -521,10 +339,10 @@ public:
     long filesize = ftell (in);
      buffer  = (char*)malloc(filesize);
      fseek (in, 0, SEEK_SET);
-    fread (buffer, filesize, 1, in); //fread ( void * ptr, size_t size, size_t count, FILE * stream );
+    fread (buffer, filesize, 1, in); 
   }
  //========================================================== 
-  int genotype(const int snp, const int id) {
+  int genotype(const int snp, const int id) {//return genotype (0, 1, 2 or 3) from given position (number of snp string, number of individual)
     const unsigned char recode[4] = {'\x01', '\x00', '\x02', '\x03'};
     int bites_by_snp = ((Nid+3)/4);
     int start = bites_by_snp*snp +3;
@@ -535,7 +353,7 @@ public:
   }
   //==================================================
   
-  void vector_for_snp (int snp1, std::vector<int> &row1) {
+  void vector_for_snp (int snp1, std::vector<int> &row1) {//fill snp string
     
     for (int i = 0; i < Nid; i++) {
      row1.push_back(genotype(snp1 ,i));
@@ -547,43 +365,22 @@ public:
   
 //===========================================================
   
-   void string_frequency (vector <vector <double>> &symbol_probability, vector <vector<int>> &set_cor_snp, const int Number_of_ind) {
-   //std::vector<int>::iterator it;
+   void string_frequency (vector <vector <double>> &symbol_probability, vector <vector<int>> &set_cor_snp, const int Number_of_ind) {//estimate frequency of each genotype in given snp
    
-  // std::map<int, double> symbol_probability;
-   
-  //  symbol_probability[0] = 0.0;
-  //  symbol_probability[1] = 0.0;
-   // symbol_probability[2] = 0.0;
-   // symbol_probability[3] = 0.0;
-    
-    // length = (double)row.size();
-   // cout << "!!!!" << length << "\n";
 	for (int a = 0; a < (int)set_cor_snp.size(); a++){
 		  for  (int b = 0; b < Number_of_ind; b++){
     symbol_probability[a][set_cor_snp[a][b]]+=1.0/Number_of_ind;
 		  }
 	}
-	//		  for ( it=row.begin() ; it != row.end(); it++ ){
-    //  symbol_probability[*it] += 1/length;
-	          
-   // }
-  
-  //  cout << "============================================"<< "\n" ;
-   // if (blocks ==2){
-  // result << symbol_probability[0] << "\t" <<  symbol_probability[1] << "\t" <<  symbol_probability[2] << "\t" <<  symbol_probability[3] << "\t" ;}
-   // cout << "============================================"<< "\n" ;
- //  return symbol_probability;		 
-  
-     
+	
   }
-  
   
   
   //===================================================================================
   
-  bool correlation (const int snp1, const int snp2,  std::vector<int> &row1, std::vector<int> &row2, const int Number_of_ind) {
-   const double Threshold = 0.81;
+  bool correlation (const int snp1, const int snp2,  std::vector<int> &row1, std::vector<int> &row2, const int Number_of_ind) {// calculate correlation betweeen two snps
+  //if R^2 > 0,81 return true
+	  const double Threshold = 0.81;
     double mean1 = 0.0;
     double mean2 = 0.0;
     int length = 0;
@@ -594,30 +391,22 @@ public:
        length++;
     }
     }
-   // cout << "length: " << length << "\n";
-   //cout << mean1 << "\n";
     mean1/=length;
     mean2/=length;
-    
-   // cout << mean1 << "\n";
+
     double covariance = 0.0;
     double correlation = 0.0;
     double standdiv1 = 0.0;
     double standdiv2 = 0.0;
     
-    for (int i=0; i<Number_of_ind; i++) {
+    for (int i=0; i<Number_of_ind; i++) {//calculate standart deviations
       if (row1[i]*row2[i]) {
 	covariance += (row1[i] - mean1)*(row2[i] - mean2);
 	standdiv1+=(row1[i] - mean1)*(row1[i] - mean1);
         standdiv2+=(row2[i] - mean2)*(row2[i] - mean2);        
 	
       }
-//      double k = (prob_matrix.at(row1[i])).at(row2[i]);
-  //    vector < double> kk = prob_matrix.at(row1[i]);
-      
-//      prob_matrix[row1[i]][row2[i]] += (1.0/Number_of_ind);
-     //cout << (prob_matrix.at(row1[i])).at(row2[i]);
-     // cout << correlation << "\t" << row1[i] << "\t" << row2[i]<< "\n";
+
      }
     
    correlation = covariance/sqrt(standdiv1*standdiv2);
@@ -636,28 +425,11 @@ public:
   
     
 }
-#if 0
-  void width_search ( vector < vector<int> > &neighbours, vector < vector<int> > &result, const int snp, const int number_of_group, const int window_size, const int start) {
-    vector <int> :: iterator iter;
- 
-    result[number_of_group][(neighbours[snp][0]-start)%window_size] = neighbours[snp][0];
-    if (neighbours[snp].size() < 2){
-       }
-    else{
-       
-      for (iter=neighbours[snp].begin()+1; iter!=neighbours[snp].end(); iter++){// +++++it = 89098+1
-	  width_search ( neighbours,result, (*iter-start)%window_size, number_of_group, window_size, start);
-  
-       }
-   }
-    neighbours[snp].clear();
-   
-}
-#endif
+
 
   void calculate_prob(map < vector < vector <int> >, double> &prob_matrix, vector< vector <double>> &symbol_probability, const int max_a, const int max_b, vector< vector <int>> &key, vector <int> &row,  double matrix_freq, int a, int b, int s ){
-	  
-	
+	  //in prob_matrix set of genotypes corresponds with probability, that these ganotypes appear together. 
+	 //method calculate_prob help to list all variants of sets and calculate their probabilities.
 	   if (symbol_probability[a][s] != 0.0){
 			 row.push_back(s);
 			 matrix_freq*=symbol_probability[a][s];
@@ -665,7 +437,6 @@ public:
 			 if (b == max_b){
 				 key.push_back(row);
 				 a++;
-				// row.clear();
 				if (a == max_a){
 					prob_matrix[key]=matrix_freq;
 					matrix_freq /= symbol_probability[a-1][row.back()];
@@ -673,8 +444,7 @@ public:
 					a--;
 					row.pop_back();
 					b = max_b - 1;
-					//a = 0;
-					
+								
 				}
 				else {
 					
@@ -710,48 +480,69 @@ public:
  s++;
  calculate_prob(prob_matrix, symbol_probability, max_a, max_b, key, row, matrix_freq, a, b, s);
 	}
-	 
-#if 0
-	  for  ( int k = 0; k < Number_of_ind; k+=blocks){
-		  vector< vector <int>> key;
-		  double matrix_freq = 1.0;
-		  for (int a = 0; a < (int)set_cor_snp.size(); a++){
-			  vector <int> row(set_cor_snp[a].begin()+k,set_cor_snp[a].begin()+k+blocks);
-			  key.push_back(row);
-				  for  (int b = k; b < k+blocks; b++){
-			  matrix_freq*= symbol_probability[a][set_cor_snp[a][b]];
-		  }
-		  }
-	         prob_matrix[key]=matrix_freq;
-	  }
-	  
-#endif
+	
  }
 
+  bool check_allele (vector <int> &row1, double maf_max, double maf_min, const int Number_of_ind) {// calculate MAF
+  vector <int>::iterator count_1;
+  int minor_allele = 0;
+  for (count_1 = row1.begin(); count_1 != row1.end(); count_1++){
+	  if ((*count_1) == 1){
+		  minor_allele += 2 ;
+	  }
+	  else{
+		  if((*count_1) == 3){
+			  minor_allele += 1;
+		  }
+	  }
 
+  }
+  double MAF = (double)minor_allele/(Number_of_ind*2);
+  if ((MAF > maf_min) && MAF < maf_max){
+	  return true;
+  }
+  else{
+	  return false;
+  }
 
-  void blocking_across_snps (const int window_size, const int Number_of_ind, const int Number_of_snps, Huff_tree <int, double> &tree){
-	  int position_snp = 0;
-	  vector <int> row1;
-	  vector <int> snp_number;
-	  vector <vector <int>> window;
-	  vector <vector <int>> set_cor_snp;
-	  vector <int> cor_snp_number;
-	  vector < vector <int>> :: iterator it_seq;
-	  vector <int>:: iterator it_number;
+  }
+
+  void blocking_across_snps (const int window_size, const int Number_of_ind, const int Number_of_snps, Huff_tree <int, double> &tree, Huff_tree <int, double> &min_tree, 
+	  double maf_max, double maf_min){ //
+	
+	  int position_snp = 0; //number of current snp string in .bim file 
+	  vector <int> row1; //current snp vector, each element corresponds to individual genotype: 0 - missing genotype, 1 - minor homozygote, 2 - major homozygote, 3 - heterozygote 
+	  vector <vector <int>> window; //set of neighboured snps.
+	  vector <int> snp_number; //numbers of snps, which are included in window
 	  
-	  while (position_snp < 1000){
-		while (((int) window.size() < window_size) && (position_snp < Number_of_snps))  {
+	  vector <vector <int>> set_cor_snp; // set of correlated snps
+	  vector <int> cor_snp_number; // numbers of snps, which are included in set_cor_snp
+	  vector < vector <int>> :: iterator it_seq; //
+	  vector <int>:: iterator it_number; //
+	  std::vector<long double> individ_costs(Number_of_ind, 0.0); //
+	  std::vector<long double> zero(Number_of_ind, 0.0); //
+	  
+	  while (position_snp < Number_of_snps){ //
+		
+		  while (((int) window.size() < window_size) && (position_snp < Number_of_snps))  { //fill window
 			row1.clear ();
+			
 			vector_for_snp (position_snp, row1);
+			if (check_allele(row1, maf_max, maf_min, Number_of_ind)){
 			window.push_back(row1);
 			snp_number.push_back(position_snp);
+			}
 			position_snp++;
 		}
-		int current_snp = 0;
-		set_cor_snp.push_back(window[0]);
+		 
+		std::vector<long double> individ_costs_add(Number_of_ind, 0.0); //
+		std::vector<long double> min_individ_costs_add(Number_of_ind, 0.0); //
+
+		int current_snp = 0; //number of snp in window
+		
+		set_cor_snp.push_back(window[0]); //
 		cor_snp_number.push_back(snp_number[0]);
-		for (int i=current_snp+1; i<(int)window.size(); i++) {
+		for (int i=current_snp+1; i<(int)window.size(); i++) { //fill set_cor_snp by correlated snps
 		  
 
 	 	    if( correlation (current_snp, i, window[current_snp], window[i], Number_of_ind)){
@@ -774,8 +565,11 @@ public:
 		int optimal_blocks;
 		int min_length = Number_of_ind*4*(int)set_cor_snp.size();
 		int cur_length = 0;
-		int max_block_size = 6 - (int)set_cor_snp.size()*(int)set_cor_snp.size();
-		if (max_block_size < 1) {max_block_size = 1;}
+		int max_block_size = 5 - (int)set_cor_snp.size()*(int)set_cor_snp.size();
+		if (max_block_size < 1) {
+			max_block_size = 1;
+		
+		}
 		const int min_block_size = 1;
 		vector <bool> cur_string;
 		vector <bool> min_string;
@@ -795,7 +589,7 @@ public:
     }
 	cout << "\n";
 
-		for (int blocks = min_block_size; blocks < max_block_size; blocks++){
+		for (int blocks = min_block_size; blocks <= max_block_size; blocks++){
 			
 			cout <<"blocks: " << "\t" << blocks << "\n";
 			tree.body.clear();
@@ -807,8 +601,9 @@ public:
 			tree.construct_tree()->fill(prefix,code);
 	
 			tree.root->print(code_1);
-			tree.string_encode_for_corr(set_cor_snp, cor_snp_number, code_1, cur_length, Number_of_ind,blocks,cur_string);
-
+			tree.string_encode_for_corr(set_cor_snp, cor_snp_number, code_1, cur_length, Number_of_ind, blocks, cur_string);
+			vector <vector <double>> costs_cor;
+			tree.bite_cost(costs_cor, set_cor_snp, individ_costs_add, Number_of_ind, blocks);
 
       
 			if (cur_length < min_length)  {
@@ -816,55 +611,26 @@ public:
 				optimal_blocks = blocks;
 				 cur_length = 0;
 				min_string = cur_string;
-				 //  costs.clear();
-				 // tree.bite_cost_2(blocks, costs);
+				min_individ_costs_add = individ_costs_add;
+			
      
 			}
-		//	else {
-	//			cout <<  optimal_blocks  << "\t" << min_length  ;
-				//   vector<double>::iterator it;
-				 //  for (it = costs.begin()  ; it != costs.end(); it++ ){
-      
-				//   result << "\t" << (*it);
+	
    cur_length = 0;
    cur_string.clear();
-   
-	//		set_cor_snp.clear();
-	//		cor_snp_number.clear();
-	//		prefix.clear();
-	//		code.clear();
-	//		code_1.clear();
-	//		delete tree.root;
-    //
-	//		break;
-	//		}
-			//costs.clear();
-//    result << "\n";
-      
-    
-      //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
- // tree.calculate_expectation(blocks);
-			
-    
-		
- //   result << optimal_blocks  << "\t" << min_length  ;
- //   vector<double>::iterator it;
- //   for (it = costs.begin()  ; it != costs.end(); it++ ){
-  //       result << "\t" << (*it);
-   
+   individ_costs_add=zero;
+
 delete tree.root;
    tree.body.clear();
     prefix.clear();
    code.clear();
    code_1.clear();
    prob_matrix.clear();
-		 
-		//  result << "\n";
+	 
 
-	    
 		}
 	
-	std::vector<vector<int>>::iterator it2;
+	 std::vector<vector<int>>::iterator it2;
 	 std::vector<int>::iterator it3;
 	 cout << "Source string:\n";
          for ( it2=set_cor_snp.begin() ; it2 != set_cor_snp.end(); it2++ ){
@@ -881,211 +647,62 @@ delete tree.root;
 	   cout << (*it1);
    }
    cout << "\n" << "Optimal_blocks:  "<< optimal_blocks << "\n" << "Min_length:    " << min_length << "\n";
+   for (int l = 0; l < Number_of_ind; l++){
+	   individ_costs[l]+=min_individ_costs_add[l];
+   }
    symbol_probability.clear();
    set_cor_snp.clear();
    cor_snp_number.clear();
+   min_individ_costs_add.clear();
+   
+   
+	  // min_tree.root.clear();
    cout << "=========================\n";
 	  }
   }
 
   
-#if 0  
-  void find_all_neighbours(const int Number_of_snps, const int Number_of_ind) {
-      
-    vector < vector<int> > neighbours;
-    vector < vector<int> > result;
-    vector<int> row1;
-    vector<int> row2;
-    const int start = 51;
-    const int window_size = 50;
-    vector<int> roww (window_size);
-    vector<int> rowww;
-    vector < vector <double> > prob_matrix;
-    vector<double> row;
-	 for (int k = 0; k <4; k++){
-	   row.push_back(0.0);
-	 }
-	 for (int l = 0; l<4; l++){
-	   prob_matrix.push_back(row);
-	 }
-   
 
-   
-   for (int i = start; i < start + window_size && i < Number_of_snps; i++) {
-      row1.clear ();
-      vector_for_snp (i, row1);
-      cout << i << "\n";
-      neighbours.push_back(rowww);
-      for (int j = i; j < start + window_size && j < Number_of_snps; j++) { //++++ j=i
-	row2.clear ();
-        
-	vector_for_snp (j, row2);
-        if (correlation(i,j ,row1,row2, Number_of_ind)) {
-	   
-	  neighbours[i-start].push_back (j);
-	  
-      }
-      }
-    }
-       
-    
-    vector< vector <int> >::iterator it2;
-    int number_of_group= -1;
-    int i = -1;
-    cout << "===========================" <<"\n";
-   
-    
-    for (it2=neighbours.begin(); it2!=neighbours.end(); it2++){
-      
-      i++;
-      
-        if ((*it2).size() != 0){
-	  
-	number_of_group++;
-	 
-         result.push_back(roww);
-	 cout << "i: " << i << "  ";
-	width_search (neighbours,result,i, number_of_group, window_size, start);
-	cout << "\n";
-      }
-    }
-    
-    for (it2=result.begin(); it2!=result.end(); it2++){
-      vector<int>::iterator iter;
-      for (iter=(*it2).begin(); iter!=(*it2).end(); iter++){
-	if ((*iter)!=0){
-	  cout << (*iter) << "\t";
-	}
-	
-    }
-    cout << "\n";
-    
-  }
-  }
-#endif
 };// end of class Genotypes
 
 
 //==================================================================================================
 
-#if 0
-  void construct_tree_for_blocks(Genotypes genotype, Huff_tree <int, double> tree, ofstream &result, int snp_number, vector<double> &costs, std::vector<int> &row1, const int Number_of_ind) {
-    std::vector<bool> prefix;
-   std::map<int, std::vector<bool> > code;
-   std::map< std::vector <vector<int>>, std::vector<bool> > code_1;
-   
-   
-  int optimal_blocks;
-  int min_length = Number_of_ind*4;
-  int cur_length = 0;
-  const int max_block_size = 4;
-  const int min_block_size = 2;
-  int freq_symb;
-     for (int blocks = min_block_size; blocks < max_block_size; blocks++){
-    cout <<"blocks: " << "\t" << blocks << "\n";
-    tree.body.clear();
-    //tree->root = NULL;
 
- //   tree.make_leafs((genotype.string_frequency(row1, result,blocks)), blocks,  freq_symb); 
-    tree.construct_tree()->fill(prefix,code);
-	
-    tree.root->print(code_1);
-    tree.string_encode(row1, blocks, code_1, cur_length,  freq_symb);
- 
-    
-    if (cur_length < min_length)  {
-    min_length = cur_length;
-    optimal_blocks = blocks;
-    costs.clear();
-    tree.bite_cost_2(blocks, costs);
-     
-    }
-  else {
-    result <<  optimal_blocks  << "\t" << min_length  ;
-    vector<double>::iterator it;
-    for (it = costs.begin()  ; it != costs.end(); it++ ){
-      
-      result << "\t" << (*it);
-    
-    }
-    costs.clear();
-    result << "\n";
-      
-    
-      //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
- // tree.calculate_expectation(blocks);
-    cur_length =0;
-
-   prefix.clear();
-   code.clear();
-   code_1.clear();
-   delete tree.root;
-    
-    break;
-    
-  }
-
-  if (blocks == max_block_size -1){
-    result << optimal_blocks  << "\t" << min_length  ;
-    vector<double>::iterator it;
-    for (it = costs.begin()  ; it != costs.end(); it++ ){
-         result << "\t" << (*it);
-  }
-    result << "\n";
-      //<< costs[0] <<"\t" <<costs[1] <<"\t"<< costs[2] <<"\t"<< costs[3] <<"\n";
-    //66666 tree->calculate_expectation(blocks);
-  }
-  
-
-cur_length =0;
- 
-   prefix.clear();
-   code.clear();
-   code_1.clear();
-   delete tree.root;
- // tree->root->clear_tree();
-  
-  }
-  }
-  
-
-  //=======================================================================================
-  
-  void construct_tree_for_correlated_snps (Genotypes genotype, Huff_tree <int, double> tree, ofstream &result, int snp_number, vector<double> &costs, std::vector<int> &row1, std::vector<int> &row2, const int Number_of_ind) {
-      
-   std::vector<bool> prefix;
-   std::map<int, std::vector<bool> > code;
-   std::map< std::vector<vector<int>>, std::vector<bool> > code_1;
-   int cur_length = 0;
-  
-   
-
-     //leafs already exist
-    tree.construct_tree()->fill(prefix,code);
-    
-    tree.root->print(code_1);
-  //  tree.string_encode_for_corr(row1,row2, code_1, cur_length, Number_of_ind);
-   // tree.bite_cost_2(1, costs);
-    vector<double>:: iterator it;
-     for (it = costs.begin()  ; it != costs.end(); it++ ){
-    //  cout << "!!!!\t" << (*it);
-      result << "\t" << (*it);
-    
-    }
-    costs.clear();
-   
-   delete tree.root;
-   tree.body.clear();
-  }
-  
- #endif 
- 
- //=======================================================================================
  
  
 int main(int argc, char **argv) {
   
-  const int Number_of_snps = 2239393;
+	 char* myFile;
+		char* maf_max; 
+		char* maf_min;
+   if (argc < 7) { // Check the value of argc. If not enough parameters have been passed, inform user and exit.
+        std::cout << "Usage is -in <input file name> -maf_min <> -maf_max <>\n"; 
+        std::cin.get();
+        exit(0);
+    } else { 
+       
+        std::cout << argv[0];
+        for (int i = 1; i < argc; i+=2) { 
+            if (i + 1 != argc){ 
+               
+				if (string(argv[i]) =="-in") {
+                    
+               	myFile = argv[i + 1];
+                } else if (string(argv[i]) == "-maf_min") {
+                    maf_min = argv[i + 1];
+                } else if (string(argv[i]) == "-maf_max") {
+                    maf_max = argv[i + 1];
+                } else {
+                    std::cout << " Not enough or invalid arguments, please try again.\n";
+                    
+                    exit(0);
+            }
+            std::cout <<" "<< argv[i] << " ";
+        }
+		}
+   }
+	const int Number_of_snps = 2239393;
   const int Number_of_ind = 60;
   const int window_size = 50;
   
@@ -1104,105 +721,16 @@ int main(int argc, char **argv) {
    
    std::vector<int> row1; //will be string from file
    std::vector<int> row2; //
-   std::vector<long double> individ_costs(Number_of_ind, 0.0); //contained average number of bites for each individual
+    
   
    
-  // for(int i =0; i < Number_of_ind; i++){
-   //   individ_costs.push_back(0.0);
-   //}
-  
-  
-   
-  Genotypes* genotype = new Genotypes ("hapmap-ceu.bed", Number_of_ind, Number_of_snps);
+  Genotypes* genotype = new Genotypes (myFile, Number_of_ind, Number_of_snps);
   Huff_tree <int, double>* tree = new Huff_tree <int, double>;
-  genotype->blocking_across_snps (window_size, Number_of_ind, Number_of_snps, *tree);
-#if 0
-  vector<bool> snp_list (Number_of_snps, true); // 0 if snp was already processed, 1 if not
-//  genotype->find_all_neighbours(Number_of_snps, Number_of_ind);
-  
-  
-  //for (int i = 0; i < Number_of_snps; i++) {
-  //  snp_list.push_back(1) ;
-	 
-  //}
-    
- 
-  std::cout << "Hello, world!" << std::endl; 
-   for (int snp1 = 0; snp1 <5 ; snp1++){
-     result << snp1 << "\t";
-     
-   if (snp_list[snp1]) {
-     std::cout << "SNP:   " << snp1 << "\n";
-     genotype->vector_for_snp (snp1, row1); //recieve data for SNP and put it in the vector<int> row1
-     bool correlated = false; // = true, if we found correlating SNP
-     
-     vector<double> costs; //estimated bite costs of genotypes
-     
-       for (int snp2 = snp1+1; ((snp2 < snp1+window_size )&&( snp2 < Number_of_snps)); snp2++) {
-	
-	 if (snp_list[snp2]){
-	
-	 
-	 //fill prob_matrix
-	 vector<double> row (4, 0.0);
-	// for (int k = 0; k <4; k++){
-	//   row.push_back(0.0);
-	 //}
-	  vector< vector <double> > prob_matrix (4, row);
-	 //for (int l = 0; l<4; l++){
-	 //  prob_matrix.push_back(row);
-	 //}
-	 
-	 
-	 row2.clear();
-	 genotype->vector_for_snp (snp2, row2); //take data for second snp
-         
-	 if(genotype-> correlation (snp1, snp2,  row1, row2, Number_of_ind)){
-	//    tree->make_leafs_for_2_snp(prob_matrix);
-	 
-	 correlated = true;
-	 
-	 snp_list[snp2] = 0;
-	
-	 break;
-          
-	 }
-      
-       }
-	 
-      }
-       
-       if (!correlated){
-		   
-       construct_tree_for_blocks(*genotype, *tree, result, snp1, costs, row1, Number_of_ind);
-	   
-       }
-       else{
-	 
-	 construct_tree_for_correlated_snps (*genotype, *tree, result, snp1, costs, row1, row2, Number_of_ind);
-	 
-       }
-       snp_list[snp1] = 0;
-        for(int i =0; i < Number_of_ind; i++){
-        individ_costs[i]+=costs[row1[i]];
-    
-        }
-       row1.clear();
-      
-    } 
-    
-  }
-  
-   
-     
-  ofstream result_ind("result_ind_plink.txt"); 
-  for(int i =0; i < Number_of_ind; i++){
-  result_ind << i<< "\t" << individ_costs[i] <<"\n";
-    
-  }
-  cout << "Whole_length:  " << whole_length << "\n";
 
-#endif 
+   Huff_tree <int, double>* min_tree = new  Huff_tree <int, double>; 
+
+   genotype->blocking_across_snps (window_size, Number_of_ind, Number_of_snps, *tree, *min_tree, atof(maf_max), atof(maf_min));
+
   end = time(NULL);
  
   cout <<  difftime(end,start) << "\n";
