@@ -508,7 +508,7 @@ public:
   }
 
   void blocking_across_snps (const int window_size, const int Number_of_ind, const int Number_of_snps, Huff_tree <int, double> &tree, Huff_tree <int, double> &min_tree, 
-	  double maf_max, double maf_min){ //
+	  double maf_max, double maf_min, ofstream &result, ofstream &ind_result ){ //
 	
 	  int position_snp = 0; //number of current snp string in .bim file 
 	  vector <int> row1; //current snp vector, each element corresponds to individual genotype: 0 - missing genotype, 1 - minor homozygote, 2 - major homozygote, 3 - heterozygote 
@@ -522,9 +522,9 @@ public:
 	  std::vector<long double> individ_costs(Number_of_ind, 0.0); //
 	  std::vector<long double> zero(Number_of_ind, 0.0); //
 	  
-	  while (position_snp < Number_of_snps){ //
+	  while ((position_snp < Number_of_ind ) || ((int) window.size() > 0)){ //
 		
-		  while (((int) window.size() < window_size) && (position_snp < Number_of_snps))  { //fill window
+		  while (((int) window.size() < window_size) && (position_snp < Number_of_ind))  { //fill window
 			row1.clear ();
 			
 			vector_for_snp (position_snp, row1);
@@ -650,6 +650,27 @@ delete tree.root;
    for (int l = 0; l < Number_of_ind; l++){
 	   individ_costs[l]+=min_individ_costs_add[l];
    }
+  
+   
+   
+   result << cor_snp_number[0];
+   for (it3 = cor_snp_number.begin()+1; it3 != cor_snp_number.end();  it3++){
+	   result <<", " <<  *it3;
+   }
+
+   result << "\t";
+
+   std::vector<vector<double>>::iterator it4;
+	 std::vector<double>::iterator it5;
+	 
+         for ( it4=symbol_probability.begin() ; it4 !=symbol_probability.end(); it4++ ){
+	    
+		for( it5 = (*it4).begin(); it5 != (*it4).end(); it5++){
+			result << *it5 << " "; 
+		}
+		result << ";";
+         } 
+	result <<"\t"<< optimal_blocks <<"\t" << min_length << "\n";
    symbol_probability.clear();
    set_cor_snp.clear();
    cor_snp_number.clear();
@@ -658,6 +679,10 @@ delete tree.root;
    
 	  // min_tree.root.clear();
    cout << "=========================\n";
+	  }
+
+	  for (int h = 0; h < Number_of_ind; h++){
+		  ind_result << h << "\t" << individ_costs[h] << "\n";
 	  }
   }
 
@@ -676,8 +701,10 @@ int main(int argc, char **argv) {
 	 char* myFile;
 		char* maf_max; 
 		char* maf_min;
-   if (argc < 7) { // Check the value of argc. If not enough parameters have been passed, inform user and exit.
-        std::cout << "Usage is -in <input file name> -maf_min <> -maf_max <>\n"; 
+		char* snp;
+		char* ind;
+   if (argc < 11) { // Check the value of argc. If not enough parameters have been passed, inform user and exit.
+        std::cout << "Usage is -in <input file name> -maf_min <> -maf_max <> -snp <number of snps> -ind <number of individuals>\n"; 
         std::cin.get();
         exit(0);
     } else { 
@@ -693,6 +720,10 @@ int main(int argc, char **argv) {
                     maf_min = argv[i + 1];
                 } else if (string(argv[i]) == "-maf_max") {
                     maf_max = argv[i + 1];
+				} else if (string(argv[i]) == "-snp") {
+                    snp = argv[i + 1];
+				} else if (string(argv[i]) == "-ind") {
+                    ind = argv[i + 1];
                 } else {
                     std::cout << " Not enough or invalid arguments, please try again.\n";
                     
@@ -702,9 +733,19 @@ int main(int argc, char **argv) {
         }
 		}
    }
-	const int Number_of_snps = 2239393;
-  const int Number_of_ind = 60;
-  const int window_size = 50;
+//const int Number_of_snps = 2239393;
+ // const int Number_of_ind = 60;
+ int Number_of_snps = (int)atof(snp);
+ int Number_of_ind = (int)atof(ind);
+
+  int window_size = 50;
+  if (Number_of_snps >50 ){
+	  window_size =50;
+  }
+  else {
+	  window_size = Number_of_snps;
+  }
+  
   
   
 
@@ -714,8 +755,8 @@ int main(int argc, char **argv) {
   
    ofstream result("result_test.txt");  
    //make a head of output file
-   result << "Snp\tfreq[0]\tfreq[1]\tfreq[2]\tfreq[3]\tblocks\tlength\tcost[0]\tcost[1]\tcost[2]\tcost[3]\n";
-   
+   result << "Correlated snps\tfrequencies\tblocks\tlength\n";
+   ofstream ind_result("ind_result.txt");
    std::cout << "Hello, world!" << std::endl;
    
    
@@ -729,7 +770,7 @@ int main(int argc, char **argv) {
 
    Huff_tree <int, double>* min_tree = new  Huff_tree <int, double>; 
 
-   genotype->blocking_across_snps (window_size, Number_of_ind, Number_of_snps, *tree, *min_tree, atof(maf_max), atof(maf_min));
+   genotype->blocking_across_snps (window_size, Number_of_ind, Number_of_snps, *tree, *min_tree, atof(maf_max), atof(maf_min), result, ind_result);
 
   end = time(NULL);
  
